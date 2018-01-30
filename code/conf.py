@@ -8,6 +8,7 @@ import argparse
 # --- define the main namespace for arguments
 defaults = argparse.Namespace()
 defaults.VISDOM_PORT = 8100
+defaults.CUDA = False
 
 
 # --- define the namespace for defaults for train mode
@@ -28,7 +29,7 @@ def get_arguments():
     parser = argparse.ArgumentParser(description='')
 
     # --- what comes after the calling the filename of the program
-    parser.add_argument('--cuda', action='store_true')
+    parser.add_argument('--cuda', action='store_true', default=defaults.CUDA)
     parser.add_argument('-visp','--visdom-port', type=int, default=defaults.VISDOM_PORT)
 
 

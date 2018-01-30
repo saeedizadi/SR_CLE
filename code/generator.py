@@ -45,11 +45,14 @@ class Generator(nn.Module):
         self.conv = nn.Conv2d(64, 3, kernel_size=9, stride=9, padding=4)
 
 
-        for i in range(nResBlks):
-            self.add_module('resBlock_'+str(i+1), Residual_Block())
+        self.resblocks = nn.ModuleList([Residual_Block() for i in range(nResBlks)])
 
-        for i in range(nUpBlks):
-            self.add('upBlock_' + str(i+1), UpSample_Block())
+        # for i in range(nResBlks):
+            # self.add_module('resBlock_'+str(i+1), Residual_Block())
+
+        self.upsamplingblocks = nn.ModuleList([UpSample_Block() for i in range(nUpBlks)])
+        # for i in range(nUpBlks):
+        #     self.add('upBlock_' + str(i+1), UpSample_Block())
 
 
 
@@ -61,13 +64,15 @@ class Generator(nn.Module):
         y = x.clone()
 
         for i in range(self.nResBlks):
-            y = self.__getattr__('resBlock'+str(i+1))(y)
+            y = self.resblocks[i](y)
+            # y = self.__getattr__('resBlock'+str(i+1))(y)
 
 
         y = self.layers1(y) + x
 
         for i in range(self.nUpBlks):
-            y = self.__getattr__('upBlock' + str(i+1))(y)
+            y = self.upsamplingblocks[i](y)
+            # y = self.__getattr__('upBlock' + str(i+1))(y)
 
         y = self.conv(y)
 
