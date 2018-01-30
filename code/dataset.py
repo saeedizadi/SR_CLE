@@ -10,15 +10,22 @@ class SRDataset(Dataset):
 
         self.highres_root = highres_root
         self.lowres_root = lowres_root
+        self.ext = ext
         self.transform = transform
 
-        self.SRfilenames = [k for k in glob(os.path.join(self.highres_root, '*.' + ext))]
-        self.LRfilenames = [k for k in glob(os.path.join(self.lowres_root, '*.' + ext))]
+        # self.SRfilenames = [k for k in glob(os.path.join(self.highres_root, '*.' + ext))]
+        self.filenames = [k.split('/')[-1].split('.')[0] for k in glob(os.path.join(self.highres_root, '*.' + ext))]
+        # self.LRfilenames = [k for k in glob(os.path.join(self.lowres_root, '*.' + ext))]
+
+
 
 
     def __getitem__(self, index):
-        im = Image.open(self.SRfilenames[index]).convert('RGB')
-        target = Image.open(self.LRfilenames[index]).convert('RGB')
+        SRfilename = os.path.join(self.highres_root, self.filenames[index] + '.' + self.ext)
+        LRfilename = os.path.join(self.lowres_root, self.filenames[index] + '_lowres.' + self.ext)
+
+        im = Image.open(SRfilename).convert('RGB')
+        target = Image.open(LRfilename).convert('RGB')
 
 
         if self.transform is not None:
@@ -30,5 +37,5 @@ class SRDataset(Dataset):
 
 
     def __len__(self):
-        return len(self.SRfilenames)
+        return len(self.filenames)
 
