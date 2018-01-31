@@ -8,10 +8,7 @@ from torch.autograd import Variable
 import torch.optim as optim
 import torch.nn as nn
 
-
 from generator import Generator
-import cv2
-import numpy as np
 
 def prepare_data(sr_dir,lr_dir, patch_size, batch_size):
 
@@ -26,8 +23,9 @@ def prepare_data(sr_dir,lr_dir, patch_size, batch_size):
     return dloader
 
 
-def train(model, trData, optimizer, lossfn, epoch, scale_transform, batch_size, lowres_dim, cuda=True):
+def train(model, trData, optimizer, lossfn, scale_transform, batch_size, lowres_dim, cuda=True):
 
+    train_loss = 0.
     for step, (high,_) in enumerate(trData):
 
 #        mat1 = np.transpose(image[0].numpy(), (1, 2, 0))
@@ -51,19 +49,26 @@ def train(model, trData, optimizer, lossfn, epoch, scale_transform, batch_size, 
 
         output = model(low)
         loss = lossfn(output, high)
+
         loss.backward()
         optimizer.step()
-        print step
 
+        train_loss += loss.data.cpu().numpy()
+
+    return train_loss/len(trData)
 
 
 def main(args):
 
+
+    # --- load data ---
     trLoader = prepare_data(sr_dir=args.srimgdir, lr_dir=args.lrimgdir, patch_size=args.patch_size,
                             batch_size=args.batch_size)
 
     scale = transforms.Compose([transforms.ToPILImage(), transforms.Resize(args.patch_size/args.downscale_ratio), transforms.ToTensor()])
 
+
+    # --- define the model and NN settings ---
     model = Generator(5, 2)
     optimizer = optim.SGD(model.parameters(), lr=args.learning_rate, momentum=args.momentum)
     criterion= nn.MSELoss()
@@ -73,11 +78,13 @@ def main(args):
         criterion = criterion.cuda()
 
 
-
-
+    # --- start training the network
     for epoch in range(args.num_epochs):
         # --- add some visualization here ---
-        train(model=model, trData=trLoader, optimizer=optimizer, lossfn = criterion, epoch = epoch, scale_transform=scale, batch_size=args.batch_size, lowres_dim=args.patch_size/args.downscale_ratio)
+        train_loss = train(model=model, trData=trLoader, optimizer=optimizer, lossfn = criterion, scale_transform=scale, batch_size=args.batch_size, lowres_dim=args.patch_size/args.downscale_ratio)
+        print('[Epoch: {0:02}/{1:02}]'
+              '\t[TrainLoss:{2:.4f}]').format(epoch, args.num_epochs, train_loss)
+
 
 
 
