@@ -55,7 +55,7 @@ def train(model, trData, optimizer, lossfn, scale_transform, batch_size, lowres_
 
         train_loss += loss.data.cpu().numpy()
 
-    return train_loss/len(trData)
+    return float(train_loss)/len(trData)
 
 
 def main(args):
