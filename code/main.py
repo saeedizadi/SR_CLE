@@ -36,9 +36,11 @@ def train(model, trData, optimizer, lossfn, epoch, scale_transform, batch_size, 
         cv2.imshow("", final_frame )
         cv2.waitKey(0)
 
-	lowres_img = torch.FloatTensor(batch_size, 3, lowres_dim , lowres_dim)
-        for j in range(args.batch_size):
-            lowres_img[j] = scale_transform(target[j])
+        print "Saeed"
+    #
+    # lowres_img = torch.FloatTensor(batch_size, 3, lowres_dim , lowres_dim)
+    # for j in range(args.batch_size):
+    #     lowres_img[j] = scale_transform(target[j])
 
 
 	
@@ -49,21 +51,20 @@ def train(model, trData, optimizer, lossfn, epoch, scale_transform, batch_size, 
 #        cv2.imshow("2", mat2 )
 #        cv2.waitKey(0)
 
-        if cuda:
-            lowres_img = lowres_img.cuda()
-            target = target.cuda()
+        # if cuda:
+        #     lowres_img = lowres_img.cuda()
+        #     target = target.cuda()
+        #
+        # lowres_img = Variable(lowres_img)
+        # target = Variable(target)
+        #
+        # optimizer.zero_grad()
 
-	lowres_img = Variable(lowres_img)
-	target = Variable(target)
 
-        optimizer.zero_grad()
-
-
-        output = model(lowres_img)
-	print output.size()
-        loss = lossfn(output, target)
-        loss.backward()
-        optimizer.step()
+        # output = model(lowres_img)
+        # loss = lossfn(output, target)
+        # loss.backward()
+        # optimizer.step()
 
 
 
