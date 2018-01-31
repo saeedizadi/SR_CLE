@@ -25,8 +25,6 @@ def main(args):
     kernel = np.ones((5,5), np.float32)/25
     filenames = [k.split('/')[-1].split('.')[0] for k in glob.glob(os.path.join(args.indir,'*.jpg'))]
 
-
-
     for f in tqdm(filenames):
 
         im = np.array(Image.open(os.path.join(args.indir, f + args.ext)))
@@ -34,9 +32,9 @@ def main(args):
 
         original_size = im.shape
 
-        im_ds = downsample(im, 8)
-        im_us = upsample(im_ds, size=original_size)
-        temp = Image.fromarray(im_us)
+        im_ds = downsample(im, 4)
+        #im_us = upsample(im_ds, size=original_size)
+        temp = Image.fromarray(im_ds, mode='RGB')
         new_filename = f + '_lowres' + args.ext
 
         temp.save(os.path.join(args.outdir, new_filename))

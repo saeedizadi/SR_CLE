@@ -12,7 +12,7 @@ class Residual_Block(nn.Module):
                                     nn.BatchNorm2d(out_channels)
                                     )
     def forward(self,x):
-        return self.layers + x
+        return self.layers(x) + x
 
 
 class UpSample_Block(nn.Module):
@@ -23,14 +23,13 @@ class UpSample_Block(nn.Module):
                                     nn.PixelShuffle(2),
                                     nn.ReLU(inplace=True))
 
-    def foward(self,x):
+    def forward(self,x):
         return self.layers(x)
 
 
 class Generator(nn.Module):
     def __init__(self, nResBlks, nUpBlks):
         super(Generator, self).__init__()
-
 
         self.nResBlks = nResBlks
         self.nUpBlks = nUpBlks
@@ -42,17 +41,10 @@ class Generator(nn.Module):
                                      nn.BatchNorm2d(64)
                                      )
 
-        self.conv = nn.Conv2d(64, 3, kernel_size=9, stride=9, padding=4)
-
+        self.conv = nn.Conv2d(64, 3, kernel_size=9, stride=1, padding=4)
 
         self.resblocks = nn.ModuleList([Residual_Block() for i in range(nResBlks)])
-
-        # for i in range(nResBlks):
-            # self.add_module('resBlock_'+str(i+1), Residual_Block())
-
         self.upsamplingblocks = nn.ModuleList([UpSample_Block() for i in range(nUpBlks)])
-        # for i in range(nUpBlks):
-        #     self.add('upBlock_' + str(i+1), UpSample_Block())
 
 
 
@@ -65,17 +57,14 @@ class Generator(nn.Module):
 
         for i in range(self.nResBlks):
             y = self.resblocks[i](y)
-            # y = self.__getattr__('resBlock'+str(i+1))(y)
 
 
         y = self.layers1(y) + x
 
+
         for i in range(self.nUpBlks):
             y = self.upsamplingblocks[i](y)
-            # y = self.__getattr__('upBlock' + str(i+1))(y)
 
         y = self.conv(y)
-
-        return y
 
         return y
