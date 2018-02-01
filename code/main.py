@@ -36,27 +36,25 @@ def train(model, trData, optimizer, lossfn, scale_transform, batch_size, lowres_
 #        final_frame = cv2.hconcat((mat1, mat2))
 #        cv2.imshow("", final_frame )
 #        cv2.waitKey(0)
-
         low = torch.FloatTensor(batch_size, 3, lowres_dim , lowres_dim)
-        for j in range(args.batch_size):
+        for j in range(high.size()[0]):
             low[j] = scale_transform(high[j])
 
         if cuda:
             low = low.cuda()
             high = high.cuda()
 
-        low= Variable(low)
-        high= Variable(high)
+        low = Variable(low)
+        high = Variable(high)
+
         optimizer.zero_grad()
-
-
         output = model(low)
         loss = lossfn(output, high)
-
         loss.backward()
         optimizer.step()
 
         train_loss += loss.data.cpu().numpy()
+
         print step
 
     return float(train_loss)/len(trData)
@@ -85,13 +83,12 @@ def validate(model, vlData, lossfn, scale_transform, batch_size, lowres_dim, cud
 
 def main(args):
 
-
     # --- load data ---
     trLoader = prepare_data(sr_dir=args.srtraindir, lr_dir=args.lrtraindir, patch_size=args.patch_size,
                             batch_size=args.batch_size)
-#    valLoader = prepare_data(sr_dir=args.srvaldir, lr_dir=args.lrvaldir, patch_size=args.patch_size,
-#                            batch_size=args.batch_size, val=True)
-#
+    valLoader = prepare_data(sr_dir=args.srvaldir, lr_dir=args.lrvaldir, patch_size=args.patch_size,
+                            batch_size=args.batch_size, val=True)
+
     scale = transforms.Compose([transforms.ToPILImage(), transforms.Resize(args.patch_size/args.downscale_ratio), transforms.ToTensor()])
 
     # --- define the model and NN settings ---
@@ -102,19 +99,17 @@ def main(args):
         model = model.cuda()
         criterion = criterion.cuda()
 
-#    # --- start training the network
+    # --- start training the network
     for epoch in range(args.num_epochs):
-#        # --- add some visualization here ---
+        # --- add some visualization here ---
         train_loss = train(model=model, trData=trLoader, optimizer=optimizer, lossfn=criterion, scale_transform=scale, batch_size=args.batch_size, lowres_dim=args.patch_size / args.downscale_ratio)
-#
-#        val_loss = validate(model=model, vlData=valLoader, lossfn=criterion, scale_transform=scale,
-#                           batch_size=args.batch_size, lowres_dim=args.patch_size / args.downscale_ratio)
-#
-#        print('[Epoch: {0:02}/{1:02}]'
-#              '\t[TrainLoss:{2:.4f}]'
-#              '\t[ValLoss:{3:.4f}]').format(epoch, args.num_epochs, train_loss, val_loss)
 
+        val_loss = validate(model=model, vlData=valLoader, lossfn=criterion, scale_transform=scale,
+                           batch_size=args.batch_size, lowres_dim=args.patch_size / args.downscale_ratio)
 
+        print('[Epoch: {0:02}/{1:02}]'
+              '\t[TrainLoss:{2:.4f}]'
+              '\t[ValLoss:{3:.4f}]').format(epoch, args.num_epochs, train_loss, val_loss)
 
 
 
