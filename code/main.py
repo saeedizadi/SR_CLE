@@ -87,10 +87,13 @@ def validate(model, vlData, lossfn, batch_size, lowres_dim, cuda=True):
 
 
 
-def save_snapshot(state, filename='checkpoint.pth.tar', savedir='./weights',is_best=False):
-    torch.save(state, os.path.join(savedir, filename))
+def save_snapshot(state, filename='checkpoint.pth.tar', savedir='./checkpoints',is_best=False):
+    fullname = os.path.join(savedir, filename)
+    torch.save(state, fullname)
     if is_best:
-        shutil.copyfile(filename, 'model_best.pth.tar')
+        best_fullname = os.path.join(savedir, 'checkpoint_best.pth.tar')
+        shutil.copyfile(fullname, best_fullname)
+    print('\t[Snapshot]')
 
 
 def main(args):
@@ -110,7 +113,7 @@ def main(args):
         criterion = criterion.cuda()
 
     # --- start training the network
-    best_loss = 0.
+    best_loss = float('inf')
     for epoch in range(1, args.num_epochs+1):
         train_loss = train(model=model, trData=trLoader, optimizer=optimizer, lossfn=criterion,
                            batch_size=args.batch_size, lowres_dim=args.patch_size / args.downscale_ratio)
@@ -119,13 +122,14 @@ def main(args):
                            batch_size=args.batch_size, lowres_dim=args.patch_size / args.downscale_ratio)
 
 
-        print('[Epoch: {0:02}/{1:02}]'
-              '\t[TrainLoss:{2:.4f}]'
-              '\t[ValLoss:{3:.4f}]').format(epoch, args.num_epochs, train_loss, val_loss)
 
         if epoch % args.log_step == 0:
-            filename = 'weights-{0:2}.pth'.format(epoch)
-            if train_loss < best_loss:
+
+            print('[Epoch: {0:02}/{1:02}]'
+                  '\t[TrainLoss:{2:.4f}]'
+                  '\t[ValLoss:{3:.4f}]').format(epoch, args.num_epochs, train_loss, val_loss),
+            filename = 'checkpoint_{0:02}.pth.tar'.format(epoch)
+            if val_loss < best_loss:
                 save_snapshot({'epoch': epoch, 'state_dict': model.state_dict(), 'optimizer': optimizer.state_dict()},
                               filename=filename, savedir=args.savedir, is_best=True)
                 best_loss = train_loss
@@ -135,6 +139,9 @@ def main(args):
                           filename=filename, savedir=args.savedir)
 
 
+        print('[Epoch: {0:02}/{1:02}]'
+              '\t[TrainLoss:{2:.4f}]'
+              '\t[ValLoss:{3:.4f}]').format(epoch, args.num_epochs, train_loss, val_loss)
 
 
 if __name__ == '__main__':

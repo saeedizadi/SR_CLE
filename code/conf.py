@@ -26,7 +26,7 @@ default_train.SR_VAL_DIR = '/local-scratch/saeedI/CLE/data/highres/val'
 default_train.LR_VAL_DIR = '/local-scratch/saeedI/CLE/data/lowres/val'
 default_train.NUM_WORKER = 2
 default_train.LOG_STEP= 2
-default_train.SAVE_DIR= '../weights'
+default_train.SAVE_DIR= '../checkpoints'
 
 
 
