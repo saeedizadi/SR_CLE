@@ -617,7 +617,7 @@ class RandomRotation(object):
 
         return angle
 
-    def __call__(self, img):
+    def __call__(self, img, target):
         """
             img (PIL Image): Image to be rotated.
 
@@ -627,7 +627,7 @@ class RandomRotation(object):
 
         angle = self.get_params(self.degrees)
 
-        return F.rotate(img, angle, self.resample, self.expand, self.center)
+        return F.rotate(img, angle, self.resample, self.expand, self.center), F.rotate(target, angle, self.resample, self.expand, self.center)
 
     def __repr__(self):
         return self.__class__.__name__ + '(degrees={0})'.format(self.degrees)

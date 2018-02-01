@@ -13,9 +13,7 @@ class SRDataset(Dataset):
         self.ext = ext
         self.transform = transform
 
-        # self.SRfilenames = [k for k in glob(os.path.join(self.highres_root, '*.' + ext))]
         self.filenames = [k.split('/')[-1].split('.')[0] for k in glob(os.path.join(self.highres_root, '*.' + ext))]
-        # self.LRfilenames = [k for k in glob(os.path.join(self.lowres_root, '*.' + ext))]
 
 
 

@@ -10,22 +10,24 @@ import torch.nn as nn
 
 from generator import Generator
 
-def prepare_data(sr_dir,lr_dir, patch_size, batch_size):
+def prepare_data(sr_dir, lr_dir, patch_size, batch_size, val=False):
 
     # --- transform the input data ---
-    transform = co_transforms.Compose([co_transforms.RandomCrop(patch_size, patch_size), co_transforms.ToTensor()])
+    if val:
+        transform = co_transforms.ToTensor()
+    else:
+        transform = co_transforms.Compose(
+            [co_transforms.RandomCrop(patch_size, patch_size), co_transforms.RandomHorizontalFlip(),
+             co_transforms.RandomVerticalFlip(), co_transforms.RandomRotation((0, 90)), co_transforms.ToTensor()])
 
     dset = SRDataset(highres_root=sr_dir, lowres_root=lr_dir, transform=transform)
-
-    # --- contstruct the data loader
     dloader = data.DataLoader(dset, batch_size=batch_size, shuffle=True)
-
     return dloader
-
 
 def train(model, trData, optimizer, lossfn, scale_transform, batch_size, lowres_dim, cuda=True):
 
     train_loss = 0.
+    model.train()
     for step, (high,_) in enumerate(trData):
 
 #        mat1 = np.transpose(image[0].numpy(), (1, 2, 0))
@@ -57,41 +59,62 @@ def train(model, trData, optimizer, lossfn, scale_transform, batch_size, lowres_
 
     return float(train_loss)/len(trData)
 
+def validate(model, vlData, lossfn, scale_transform, batch_size, lowres_dim, cuda=True)
+    val_loss = 0.
+    model.eval()
+    for step, (high, _) in enumerate(vlData):
+
+        low = torch.FloatTensor(batch_size, 3, lowres_dim, lowres_dim)
+        for j in range(args.batch_size):
+            low[j] = scale_transform(high[j])
+
+        if cuda:
+            low = low.cuda()
+            high = high.cuda()
+
+        low = Variable(low, versatile=True)
+        high = Variable(high, versatile=True)
+
+        output = model(low)
+        loss = lossfn(output, high)
+        val_loss += loss.data.cpu().numpy()
+
+    return float(val_loss)/len(vlData)
 
 def main(args):
 
 
     # --- load data ---
-    trLoader = prepare_data(sr_dir=args.srimgdir, lr_dir=args.lrimgdir, patch_size=args.patch_size,
+    trLoader = prepare_data(sr_dir=args.srtraindir, lr_dir=args.srvaldir, patch_size=args.patch_size,
                             batch_size=args.batch_size)
+    valLoader = prepare_data(sr_dir=args.srtraindir, lr_dir=args.srvaldir, patch_size=args.patch_size,
+                            batch_size=args.batch_size, val=True)
+
+    print len(trLoader)
+    print len(valLoader)
 
     scale = transforms.Compose([transforms.ToPILImage(), transforms.Resize(args.patch_size/args.downscale_ratio), transforms.ToTensor()])
-
 
     # --- define the model and NN settings ---
     model = Generator(5, 2)
     optimizer = optim.SGD(model.parameters(), lr=args.learning_rate, momentum=args.momentum)
     criterion= nn.MSELoss()
-
     if args.cuda:
         model = model.cuda()
         criterion = criterion.cuda()
 
-
     # --- start training the network
     for epoch in range(args.num_epochs):
         # --- add some visualization here ---
-        train_loss = train(model=model, trData=trLoader, optimizer=optimizer, lossfn = criterion, scale_transform=scale, batch_size=args.batch_size, lowres_dim=args.patch_size/args.downscale_ratio)
+        train_loss = train(model=model, trData=trLoader, optimizer=optimizer, lossfn=criterion, scale_transform=scale,
+                           batch_size=args.batch_size, lowres_dim=args.patch_size / args.downscale_ratio)
+
+        val_loss = validate(model=model, vlData=valLoader, lossfn=criterion, scale_transform=scale,
+                           batch_size=args.batch_size, lowres_dim=args.patch_size / args.downscale_ratio)
+
         print('[Epoch: {0:02}/{1:02}]'
-              '\t[TrainLoss:{2:.4f}]').format(epoch, args.num_epochs, train_loss)
-
-
-
-
-
-
-
-
+              '\t[TrainLoss:{2:.4f}]'
+              '\t[ValLoss:{3:.4f}]').format(epoch, args.num_epochs, train_loss, val_loss)
 
 
 

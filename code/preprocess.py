@@ -7,6 +7,7 @@ import argparse
 from PIL import Image
 from tqdm import tqdm
 import cv2
+import shutil
 
 
 
@@ -20,25 +21,25 @@ def upsample(image, size):
 
 def main(args):
 
+    root = args.indir.rsplit('/', 1)[0]
 
-    args.outdir = args.indir
+    if os.path.exists(os.path.join(root, 'lowres')):
+        shutil.rmtree(os.path.join(root, 'lowres'))
+    shutil.copytree(args.indir, os.path.join(root, 'lowres'))
+
     kernel = np.ones((5,5), np.float32)/25
-    filenames = [k.split('/')[-1].split('.')[0] for k in glob.glob(os.path.join(args.indir,'*.jpg'))]
 
-    for f in tqdm(filenames):
-
-        im = np.array(Image.open(os.path.join(args.indir, f + args.ext)))
-        im = cv2.filter2D(im, -1, kernel)
-
-        original_size = im.shape
-
-        im_ds = downsample(im, 4)
-        #im_us = upsample(im_ds, size=original_size)
-        temp = Image.fromarray(im_ds, mode='RGB')
-        new_filename = f + '_lowres' + args.ext
-
-        temp.save(os.path.join(args.outdir, new_filename))
-
+    for (dirpath, _ , _) in os.walk(os.path.join(root, 'lowres')):
+        filenames = [k.split('/')[-1].split('.')[0] for k in glob.glob(os.path.join(dirpath,'*.jpg'))]
+        for f in tqdm(filenames):
+            im = np.array(Image.open(os.path.join(dirpath, f + args.ext)))
+            im = cv2.filter2D(im, -1, kernel)
+            original_size = im.shape
+            im_ds = downsample(im, args.magnif)
+            im_us = upsample(im_ds, size=original_size)
+            temp = Image.fromarray(im_us , mode='RGB')
+            new_filename = f + args.ext
+            temp.save(os.path.join(dirpath, new_filename))
 
 
 
@@ -46,7 +47,6 @@ if __name__ == '__main__':
 
     parser = argparse.ArgumentParser()
     parser.add_argument('--indir', type=str, default='../data')
-    parser.add_argument('--outdir', type=str, default='../data/out')
     parser.add_argument('--ext', type=str, default='.jpg')
     parser.add_argument('--magnif', type=int, default=4)
     args = parser.parse_args()
