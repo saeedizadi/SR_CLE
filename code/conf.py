@@ -25,6 +25,8 @@ default_train.LR_TRAIN_DIR = '/local-scratch/saeedI/CLE/data/lowres/train'
 default_train.SR_VAL_DIR = '/local-scratch/saeedI/CLE/data/highres/val'
 default_train.LR_VAL_DIR = '/local-scratch/saeedI/CLE/data/lowres/val'
 default_train.NUM_WORKER = 2
+default_train.LOG_STEP= 2
+default_train.SAVE_DIR= '../weights'
 
 
 
@@ -56,6 +58,8 @@ def get_arguments():
     parser_train.add_argument('--lrtraindir', type=str, default=default_train.LR_TRAIN_DIR)
     parser_train.add_argument('--srvaldir', type=str, default=default_train.SR_VAL_DIR)
     parser_train.add_argument('--lrvaldir', type=str, default=default_train.LR_VAL_DIR)
+    parser_train.add_argument('--savedir', type=str, default=default_train.SAVE_DIR)
+    parser_train.add_argument('--log-step', type=int, default=default_train.LOG_STEP)
 
 
     args = parser.parse_args()

@@ -7,7 +7,8 @@ from dataset import SRDataset
 from torch.autograd import Variable
 import torch.optim as optim
 import torch.nn as nn
-
+import shutil
+import os
 from generator import Generator
 
 def prepare_data(sr_dir, lr_dir, patch_size, batch_size, val=False):
@@ -23,6 +24,8 @@ def prepare_data(sr_dir, lr_dir, patch_size, batch_size, val=False):
     dset = SRDataset(highres_root=sr_dir, lowres_root=lr_dir, transform=transform)
     dloader = data.DataLoader(dset, batch_size=batch_size, shuffle=True)
     return dloader
+
+
 
 def train(model, trData, optimizer, lossfn, batch_size, lowres_dim, cuda=True):
 
@@ -57,6 +60,8 @@ def train(model, trData, optimizer, lossfn, batch_size, lowres_dim, cuda=True):
 
     return float(train_loss)/len(trData)
 
+
+
 def validate(model, vlData, lossfn, batch_size, lowres_dim, cuda=True):
     val_loss = 0.
     model.eval()
@@ -80,6 +85,14 @@ def validate(model, vlData, lossfn, batch_size, lowres_dim, cuda=True):
 
     return float(val_loss)/len(vlData)
 
+
+
+def save_snapshot(state, filename='checkpoint.pth.tar', savedir='./weights',is_best=False):
+    torch.save(state, os.path.join(savedir, filename))
+    if is_best:
+        shutil.copyfile(filename, 'model_best.pth.tar')
+
+
 def main(args):
 
     # --- load data ---
@@ -97,17 +110,30 @@ def main(args):
         criterion = criterion.cuda()
 
     # --- start training the network
-    for epoch in range(args.num_epochs):
-        # --- add some visualization here ---
-        train_loss = train(model=model, trData=trLoader, optimizer=optimizer, lossfn=criterion, batch_size=args.batch_size, lowres_dim=args.patch_size / args.downscale_ratio)
-        print "---------------------------" 
+    best_loss = 0.
+    for epoch in range(1, args.num_epochs+1):
+        train_loss = train(model=model, trData=trLoader, optimizer=optimizer, lossfn=criterion,
+                           batch_size=args.batch_size, lowres_dim=args.patch_size / args.downscale_ratio)
 
         val_loss = validate(model=model, vlData=valLoader, lossfn=criterion,
                            batch_size=args.batch_size, lowres_dim=args.patch_size / args.downscale_ratio)
 
+
         print('[Epoch: {0:02}/{1:02}]'
               '\t[TrainLoss:{2:.4f}]'
               '\t[ValLoss:{3:.4f}]').format(epoch, args.num_epochs, train_loss, val_loss)
+
+        if epoch % args.log_step == 0:
+            filename = 'weights-{0:2}.pth'.format(epoch)
+            if train_loss < best_loss:
+                save_snapshot({'epoch': epoch, 'state_dict': model.state_dict(), 'optimizer': optimizer.state_dict()},
+                              filename=filename, savedir=args.savedir, is_best=True)
+                best_loss = train_loss
+                continue
+
+            save_snapshot({'epoch': epoch, 'state_dict': model.state_dict(), 'optimizer': optimizer.state_dict()},
+                          filename=filename, savedir=args.savedir)
+
 
 
 
