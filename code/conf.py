@@ -55,11 +55,6 @@ def get_arguments():
     parser_train.add_argument('--srvaldir', type=str, default=default_train.SR_VAL_DIR)
     parser_train.add_argument('--lrvaldir', type=str, default=default_train.LR_VAL_DIR)
 
-    # --- define subparsers --> validation
-    parser_val = subparser.add_parser('val')        
-    parser_train.add_argument('-bsize', '--batch-size', type=int, default=default_val.BATCH_SIZE)
-    parser_train.add_argument('-dscale', '--downscale-ratio', type=int, default=default_val.DOWNSCALE_RATIO)    
-    parser_train.add_argument('--lrimgdir', type=str, default=default_val.LR_IMG_DIR)
 
     args = parser.parse_args()
     return args
