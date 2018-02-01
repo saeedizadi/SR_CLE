@@ -14,21 +14,21 @@ def prepare_data(sr_dir, lr_dir, patch_size, batch_size, val=False):
 
     # --- transform the input data ---
     if val:
-        transform = co_transforms.Compose([co_transforms.ToTensor()])
+        transform = co_transforms.Compose([co_transforms.RandomCrop(patch_size, patch_size), co_transforms.ToTensor()])
     else:
         transform = co_transforms.Compose(
             [co_transforms.RandomCrop(patch_size, patch_size), co_transforms.RandomHorizontalFlip(),
              co_transforms.RandomVerticalFlip(), co_transforms.RandomRotation((0, 90)), co_transforms.ToTensor()])
 
     dset = SRDataset(highres_root=sr_dir, lowres_root=lr_dir, transform=transform)
-    print len(dset)
     dloader = data.DataLoader(dset, batch_size=batch_size, shuffle=True)
     return dloader
 
-def train(model, trData, optimizer, lossfn, scale_transform, batch_size, lowres_dim, cuda=True):
+def train(model, trData, optimizer, lossfn, batch_size, lowres_dim, cuda=True):
 
     train_loss = 0.
     model.train()
+    downsample = transforms.Compose([transforms.ToPILImage(), transforms.Resize(lowres_dim), transforms.ToTensor()])
     for step, (high,_) in enumerate(trData):
 
 #        mat1 = np.transpose(image[0].numpy(), (1, 2, 0))
@@ -36,9 +36,9 @@ def train(model, trData, optimizer, lossfn, scale_transform, batch_size, lowres_
 #        final_frame = cv2.hconcat((mat1, mat2))
 #        cv2.imshow("", final_frame )
 #        cv2.waitKey(0)
-        low = torch.FloatTensor(batch_size, 3, lowres_dim , lowres_dim)
+        low = torch.FloatTensor(high.size()[0], 3, lowres_dim , lowres_dim)
         for j in range(high.size()[0]):
-            low[j] = scale_transform(high[j])
+            low[j] = downsample(high[j])
 
         if cuda:
             low = low.cuda()
@@ -55,25 +55,24 @@ def train(model, trData, optimizer, lossfn, scale_transform, batch_size, lowres_
 
         train_loss += loss.data.cpu().numpy()
 
-        print step
-
     return float(train_loss)/len(trData)
 
-def validate(model, vlData, lossfn, scale_transform, batch_size, lowres_dim, cuda=True):
+def validate(model, vlData, lossfn, batch_size, lowres_dim, cuda=True):
     val_loss = 0.
     model.eval()
+    downsample = transforms.Compose([transforms.ToPILImage(), transforms.Resize(lowres_dim), transforms.ToTensor()])
     for step, (high, _) in enumerate(vlData):
 
-        low = torch.FloatTensor(batch_size, 3, lowres_dim, lowres_dim)
-        for j in range(args.batch_size):
-            low[j] = scale_transform(high[j])
+        low = torch.FloatTensor(high.size()[0], 3, lowres_dim, lowres_dim)
+        for j in range(high.size()[0]):
+            low[j] = downsample(high[j])
 
         if cuda:
             low = low.cuda()
             high = high.cuda()
 
-        low = Variable(low, versatile=True)
-        high = Variable(high, versatile=True)
+        low = Variable(low, volatile=True)
+        high = Variable(high, volatile=True)
 
         output = model(low)
         loss = lossfn(output, high)
@@ -89,8 +88,6 @@ def main(args):
     valLoader = prepare_data(sr_dir=args.srvaldir, lr_dir=args.lrvaldir, patch_size=args.patch_size,
                             batch_size=args.batch_size, val=True)
 
-    scale = transforms.Compose([transforms.ToPILImage(), transforms.Resize(args.patch_size/args.downscale_ratio), transforms.ToTensor()])
-
     # --- define the model and NN settings ---
     model = Generator(5, 2)
     optimizer = optim.SGD(model.parameters(), lr=args.learning_rate, momentum=args.momentum)
@@ -102,9 +99,10 @@ def main(args):
     # --- start training the network
     for epoch in range(args.num_epochs):
         # --- add some visualization here ---
-        train_loss = train(model=model, trData=trLoader, optimizer=optimizer, lossfn=criterion, scale_transform=scale, batch_size=args.batch_size, lowres_dim=args.patch_size / args.downscale_ratio)
+        train_loss = train(model=model, trData=trLoader, optimizer=optimizer, lossfn=criterion, batch_size=args.batch_size, lowres_dim=args.patch_size / args.downscale_ratio)
+        print "---------------------------" 
 
-        val_loss = validate(model=model, vlData=valLoader, lossfn=criterion, scale_transform=scale,
+        val_loss = validate(model=model, vlData=valLoader, lossfn=criterion,
                            batch_size=args.batch_size, lowres_dim=args.patch_size / args.downscale_ratio)
 
         print('[Epoch: {0:02}/{1:02}]'

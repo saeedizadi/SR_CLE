@@ -18,6 +18,7 @@ default_train.LEARNING_RATE = 0.001
 default_train.EPOCHS = 100
 default_train.MOMENTUM = 0.9
 default_train.PATCH_SIZE  = 128
+default_train.IMAGE_SIZE  = 1024
 default_train.DOWNSCALE_RATIO= 4
 default_train.SR_TRAIN_DIR = '/local-scratch/saeedI/CLE/data/highres/train'
 default_train.LR_TRAIN_DIR = '/local-scratch/saeedI/CLE/data/lowres/train'
@@ -48,6 +49,7 @@ def get_arguments():
     parser_train.add_argument('-lr', '--learning-rate', type=float, default=default_train.LEARNING_RATE)
     parser_train.add_argument('-mom', '--momentum', type=float, default=default_train.MOMENTUM)
     parser_train.add_argument('-psize', '--patch-size', type=int, default=default_train.PATCH_SIZE)
+    parser_train.add_argument('--image-size', type=int, default=default_train.IMAGE_SIZE)
     parser_train.add_argument('-bsize', '--batch-size', type=int, default=default_train.BATCH_SIZE)
     parser_train.add_argument('-dscale', '--downscale-ratio', type=int, default=default_train.DOWNSCALE_RATIO)
     parser_train.add_argument('--srtraindir', type=str, default=default_train.SR_TRAIN_DIR)
