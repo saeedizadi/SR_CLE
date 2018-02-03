@@ -7,6 +7,7 @@ import torch.optim as optim
 import torch.utils.data as data
 import torchvision.transforms as transforms
 from torch.autograd import Variable
+import torch.optim.lr_scheduler as lr_scheduler
 
 import co_transforms as co_transforms
 from conf import get_arguments
@@ -100,6 +101,7 @@ def main(args):
     model = Generator(5, 2)
     optimizer = optim.SGD(model.parameters(), lr=args.learning_rate, momentum=args.momentum)
     criterion = nn.MSELoss()
+    scheduler = lr_scheduler.MultiStepLR(optimizer, milestones=[200, 500], gamma=0.1)
 
 
     if args.cuda:
@@ -109,6 +111,7 @@ def main(args):
     # --- start training the network
     best_loss = float('inf')
     for epoch in range(1, args.num_epochs + 1):
+        scheduler.step()
         train_loss = train(model=model, trData=trLoader, optimizer=optimizer, lossfn=criterion,
                            batch_size=args.batch_size, lowres_dim=args.patch_size / args.downscale_ratio)
 
