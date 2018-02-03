@@ -15,13 +15,15 @@ from dataset import SRDataset
 from generator import Generator
 
 
-def prepare_data(sr_dir, lr_dir, patch_size, batch_size, val=False):
-    if val:
+def prepare_data(sr_dir, lr_dir, patch_size, batch_size, mode='train'):
+    if 'val':
         transform = co_transforms.Compose([co_transforms.RandomCrop(patch_size, patch_size), co_transforms.ToTensor()])
-    else:
+    elif 'train':
         transform = co_transforms.Compose(
             [co_transforms.RandomCrop(patch_size, patch_size), co_transforms.RandomHorizontalFlip(),
              co_transforms.RandomVerticalFlip(), co_transforms.RandomRotation((0, 90)), co_transforms.ToTensor()])
+    elif 'test':
+        transform = co_transforms.ToTensor()
 
     dset = SRDataset(highres_root=sr_dir, lowres_root=lr_dir, transform=transform)
     dloader = data.DataLoader(dset, batch_size=batch_size, shuffle=True)
@@ -84,6 +86,27 @@ def validate(model, vlData, lossfn, batch_size, lowres_dim, cuda=True):
 
     return float(val_loss) / len(vlData)
 
+def test(model, testData, savedir, lowres_dim, cuda=True):
+
+    model.eval()
+    downsample = transforms.Compose([transforms.ToPILImage(), transforms.Resize(lowres_dim), transforms.ToTensor()])
+    toImage = transforms.Compose([transforms.ToPILImage()])
+
+    for step, (high, _) in enumerate(testData):
+        low = torch.FloatTensor(high.size()[0], 3, lowres_dim, lowres_dim)
+        for j in range(high.size()[0]):
+            low[j] = downsample(high[j])
+
+        if cuda:
+            low = low.cuda()
+
+        low = Variable(low, volatile=True)
+
+        output = model(low)
+        output_img = toImage(output)
+
+        #write images to the savedir here
+
 
 def save_snapshot(state, filename='checkpoint.pth.tar', savedir='./checkpoints'):
     fullname = os.path.join(savedir, filename)
@@ -93,9 +116,9 @@ def save_snapshot(state, filename='checkpoint.pth.tar', savedir='./checkpoints')
 def main(args):
     # --- load data ---
     trLoader = prepare_data(sr_dir=args.srtraindir, lr_dir=args.lrtraindir, patch_size=args.patch_size,
-                            batch_size=args.batch_size)
+                            batch_size=args.batch_size, mode='train')
     valLoader = prepare_data(sr_dir=args.srvaldir, lr_dir=args.lrvaldir, patch_size=args.patch_size,
-                             batch_size=args.batch_size, val=True)
+                             batch_size=args.batch_size, mode='val')
 
     # --- define the model and NN settings ---
     model = Generator(5, 2)
@@ -109,37 +132,50 @@ def main(args):
         criterion = criterion.cuda()
 
     # --- start training the network
-    best_loss = float('inf')
-    for epoch in range(1, args.num_epochs + 1):
-        scheduler.step()
-        train_loss = train(model=model, trData=trLoader, optimizer=optimizer, lossfn=criterion,
-                           batch_size=args.batch_size, lowres_dim=args.patch_size / args.downscale_ratio)
+    if args.mode == "train":
+        best_loss = float('inf')
+        for epoch in range(1, args.num_epochs + 1):
+            scheduler.step()
+            train_loss = train(model=model, trData=trLoader, optimizer=optimizer, lossfn=criterion,
+                               batch_size=args.batch_size, lowres_dim=args.patch_size / args.downscale_ratio)
 
-        val_loss = validate(model=model, vlData=valLoader, lossfn=criterion,
-                            batch_size=args.batch_size, lowres_dim=args.patch_size / args.downscale_ratio)
+            val_loss = validate(model=model, vlData=valLoader, lossfn=criterion,
+                                batch_size=args.batch_size, lowres_dim=args.patch_size / args.downscale_ratio)
 
-        if epoch % args.log_step == 0:
+            if epoch % args.log_step == 0:
 
-            filename = 'checkpoint_{0:02}.pth.tar'.format(epoch)
-            save_snapshot({'epoch': epoch, 'state_dict': model.state_dict(), 'optimizer': optimizer.state_dict()},
-                          filename=filename, savedir=args.savedir)
+                filename = 'checkpoint_{0:02}.pth.tar'.format(epoch)
+                save_snapshot({'epoch': epoch, 'state_dict': model.state_dict(), 'optimizer': optimizer.state_dict()},
+                              filename=filename, savedir=args.savedir)
+
+
+                print('[Epoch: {0:02}/{1:02}]'
+                      '\t[TrainLoss:{2:.4f}]'
+                      '\t[ValLoss:{3:.4f}]').format(epoch, args.num_epochs, train_loss, val_loss),
+                print('\t [Snapshot]')
+
+                if val_loss < best_loss:
+                    best_fullname = os.path.join(args.savedir, 'checkpoint_best.pth.tar')
+                    shutil.copyfile(os.path.join(args.savedir, filename), best_fullname)
+                    best_loss = train_loss
+                continue
 
 
             print('[Epoch: {0:02}/{1:02}]'
                   '\t[TrainLoss:{2:.4f}]'
-                  '\t[ValLoss:{3:.4f}]').format(epoch, args.num_epochs, train_loss, val_loss),
-            print('\t [Snapshot]')
+                  '\t[ValLoss:{3:.4f}]').format(epoch, args.num_epochs, train_loss, val_loss)
+    elif args.mode == 'test':
 
-            if val_loss < best_loss:
-                best_fullname = os.path.join(args.savedir, 'checkpoint_best.pth.tar')
-                shutil.copyfile(os.path.join(args.savedir, filename), best_fullname)
-                best_loss = train_loss
-            continue
+        testLoader = prepare_data(sr_dir=args.srtestdir, lr_dir=args.lrtestdir, patch_size='',
+                                batch_size=args.batch_size, mode='test')
 
+        filename = 'checkpoint_{0:02}.pth.tar'.format(args.state)
+        checkpoint = torch.load(os.path.join(args.weightdir, filename))
 
-        print('[Epoch: {0:02}/{1:02}]'
-              '\t[TrainLoss:{2:.4f}]'
-              '\t[ValLoss:{3:.4f}]').format(epoch, args.num_epochs, train_loss, val_loss)
+        model.load_state_dict(checkpoint['state_dict'])
+
+        test(model,testLoader, args.savedir, lowres_dim=args.image_size / args.downscale_ratio)
+
 
 
 if __name__ == '__main__':

@@ -28,7 +28,17 @@ default_train.NUM_WORKER = 2
 default_train.LOG_STEP= 100
 default_train.SAVE_DIR= '../checkpoints'
 
-
+default_test = argparse.Namespace()
+default_test.BATCH_SIZE = 10
+default_test.PATCH_SIZE  = 128
+default_test.IMAGE_SIZE  = 1024
+default_test.DOWNSCALE_RATIO= 4
+default_test.SR_TEST_DIR = '/local-scratch/saeedI/CLE/data/highres/test'
+default_test.LR_TEST_DIR = '/local-scratch/saeedI/CLE/data/lowres/test'
+default_test.NUM_WORKER = 2
+default_test.STATE= 100
+default_test.SAVE_DIR= '../results'
+default_test.WEIGHT_DIR= '../checkpoints'
 
 
 # --- define the function to define the parsers and subparsers and get the arguments
@@ -60,6 +70,18 @@ def get_arguments():
     parser_train.add_argument('--lrvaldir', type=str, default=default_train.LR_VAL_DIR)
     parser_train.add_argument('--savedir', type=str, default=default_train.SAVE_DIR)
     parser_train.add_argument('--log-step', type=int, default=default_train.LOG_STEP)
+
+    # --- define subparsers --> test
+    parser_test = subparser.add_parser('test')
+    parser_test.add_argument('-psize', '--patch-size', type=int, default=default_test.PATCH_SIZE)
+    parser_test.add_argument('--image-size', type=int, default=default_test.IMAGE_SIZE)
+    parser_test.add_argument('-bsize', '--batch-size', type=int, default=default_test.BATCH_SIZE)
+    parser_test.add_argument('-dscale', '--downscale-ratio', type=int, default=default_test.DOWNSCALE_RATIO)
+    parser_test.add_argument('--srtestdir', type=str, default=default_test.SR_TRAIN_DIR)
+    parser_test.add_argument('--lrtestdir', type=str, default=default_test.LR_TRAIN_DIR)
+    parser_test.add_argument('--savedir', type=str, default=default_test.SAVE_DIR)
+    parser_test.add_argument('--weightdir', type=str, default=default_test.WEIGHT_DIR)
+    parser_test.add_argument('--state', type=int, default=default_test.STATE)
 
 
     args = parser.parse_args()
