@@ -33,10 +33,10 @@ default_test.BATCH_SIZE = 10
 default_test.PATCH_SIZE  = 128
 default_test.IMAGE_SIZE  = 1024
 default_test.DOWNSCALE_RATIO= 4
-default_test.SR_TEST_DIR = '/local-scratch/saeedI/CLE/data/highres/test'
-default_test.LR_TEST_DIR = '/local-scratch/saeedI/CLE/data/lowres/test'
+default_test.SR_TEST_DIR = '/local-scratch/saeedI/CLE/data/highres/val'
+default_test.LR_TEST_DIR = '/local-scratch/saeedI/CLE/data/lowres/val'
 default_test.NUM_WORKER = 2
-default_test.STATE= 100
+default_test.STATE= 1000
 default_test.SAVE_DIR= '../results'
 default_test.WEIGHT_DIR= '../checkpoints'
 
@@ -77,8 +77,8 @@ def get_arguments():
     parser_test.add_argument('--image-size', type=int, default=default_test.IMAGE_SIZE)
     parser_test.add_argument('-bsize', '--batch-size', type=int, default=default_test.BATCH_SIZE)
     parser_test.add_argument('-dscale', '--downscale-ratio', type=int, default=default_test.DOWNSCALE_RATIO)
-    parser_test.add_argument('--srtestdir', type=str, default=default_test.SR_TRAIN_DIR)
-    parser_test.add_argument('--lrtestdir', type=str, default=default_test.LR_TRAIN_DIR)
+    parser_test.add_argument('--srtestdir', type=str, default=default_test.SR_TEST_DIR)
+    parser_test.add_argument('--lrtestdir', type=str, default=default_test.LR_TEST_DIR)
     parser_test.add_argument('--savedir', type=str, default=default_test.SAVE_DIR)
     parser_test.add_argument('--weightdir', type=str, default=default_test.WEIGHT_DIR)
     parser_test.add_argument('--state', type=int, default=default_test.STATE)

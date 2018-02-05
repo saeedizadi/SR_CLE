@@ -14,13 +14,15 @@ class SRDataset(Dataset):
         self.transform = transform
 
         self.filenames = [k.split('/')[-1].split('.')[0] for k in glob(os.path.join(self.highres_root, '*.' + ext))]
-
+        print len(self.filenames)
 
 
 
     def __getitem__(self, index):
         SRfilename = os.path.join(self.highres_root, self.filenames[index] + '.' + self.ext)
         LRfilename = os.path.join(self.lowres_root, self.filenames[index] + '.' + self.ext)
+
+
 
         im = Image.open(SRfilename).convert('RGB')
         target = Image.open(LRfilename).convert('RGB')

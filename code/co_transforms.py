@@ -261,7 +261,7 @@ class RandomCrop(object):
 class RandomHorizontalFlip(object):
     """Horizontally flip the given PIL Image randomly with a probability of 0.5."""
 
-    def __call__(self, img, target):
+    def __call__(self, img):
         """
         Args:
             img (PIL Image): Image to be flipped.
@@ -270,8 +270,8 @@ class RandomHorizontalFlip(object):
             PIL Image: Randomly flipped image.
         """
         if random.random() < 0.5:
-            return F.hflip(img), F.hflip(target)
-        return img, target
+            return F.hflip(img)
+        return img
 
     def __repr__(self):
         return self.__class__.__name__ + '()'
@@ -280,7 +280,7 @@ class RandomHorizontalFlip(object):
 class RandomVerticalFlip(object):
     """Vertically flip the given PIL Image randomly with a probability of 0.5."""
 
-    def __call__(self, img, target):
+    def __call__(self, img):
         """
         Args:
             img (PIL Image): Image to be flipped.
@@ -289,8 +289,8 @@ class RandomVerticalFlip(object):
             PIL Image: Randomly flipped image.
         """
         if random.random() < 0.5:
-            return F.vflip(img), F.vflip(target)
-        return img, target
+            return F.vflip(img)
+        return img
 
     def __repr__(self):
         return self.__class__.__name__ + '()'

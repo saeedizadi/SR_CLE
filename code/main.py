@@ -16,17 +16,18 @@ from generator import Generator
 
 
 def prepare_data(sr_dir, lr_dir, patch_size, batch_size, mode='train'):
-    if 'val':
+    if mode is 'val':
+        print "I'm here"
         transform = co_transforms.Compose([co_transforms.RandomCrop(patch_size, patch_size), co_transforms.ToTensor()])
-    elif 'train':
+    elif mode is 'train':
         transform = co_transforms.Compose(
             [co_transforms.RandomCrop(patch_size, patch_size), co_transforms.RandomHorizontalFlip(),
              co_transforms.RandomVerticalFlip(), co_transforms.RandomRotation((0, 90)), co_transforms.ToTensor()])
-    elif 'test':
+    else:
         transform = co_transforms.ToTensor()
 
     dset = SRDataset(highres_root=sr_dir, lowres_root=lr_dir, transform=transform)
-    dloader = data.DataLoader(dset, batch_size=batch_size, shuffle=True)
+    dloader = data.DataLoader(dset, batch_size=batch_size, shuffle=False)
     return dloader
 
 
@@ -90,7 +91,7 @@ def test(model, testData, savedir, lowres_dim, cuda=True):
 
     model.eval()
     downsample = transforms.Compose([transforms.ToPILImage(), transforms.Resize(lowres_dim), transforms.ToTensor()])
-    toImage = transforms.Compose([transforms.ToPILImage()])
+    toImage = transforms.ToPILImage()
 
     for step, (high, _) in enumerate(testData):
         low = torch.FloatTensor(high.size()[0], 3, lowres_dim, lowres_dim)
@@ -99,13 +100,16 @@ def test(model, testData, savedir, lowres_dim, cuda=True):
 
         if cuda:
             low = low.cuda()
-
+#
         low = Variable(low, volatile=True)
-
+#
         output = model(low)
-        output_img = toImage(output)
+        for j in range(output.size()[0]):
+            output_img = toImage(output[j].data.cpu())
+            filename = os.path.join(args.savedir, 'result_{0:03}.bmp'.format(step*output.size()[0]+ j))
+            print filename
+            output_img.save(filename,'BMP')
 
-        #write images to the savedir here
 
 
 def save_snapshot(state, filename='checkpoint.pth.tar', savedir='./checkpoints'):
@@ -115,16 +119,10 @@ def save_snapshot(state, filename='checkpoint.pth.tar', savedir='./checkpoints')
 
 def main(args):
     # --- load data ---
-    trLoader = prepare_data(sr_dir=args.srtraindir, lr_dir=args.lrtraindir, patch_size=args.patch_size,
-                            batch_size=args.batch_size, mode='train')
-    valLoader = prepare_data(sr_dir=args.srvaldir, lr_dir=args.lrvaldir, patch_size=args.patch_size,
-                             batch_size=args.batch_size, mode='val')
 
     # --- define the model and NN settings ---
     model = Generator(5, 2)
-    optimizer = optim.SGD(model.parameters(), lr=args.learning_rate, momentum=args.momentum)
     criterion = nn.MSELoss()
-    scheduler = lr_scheduler.MultiStepLR(optimizer, milestones=[200, 500], gamma=0.1)
 
 
     if args.cuda:
@@ -133,6 +131,14 @@ def main(args):
 
     # --- start training the network
     if args.mode == "train":
+        trLoader = prepare_data(sr_dir=args.srtraindir, lr_dir=args.lrtraindir, patch_size=args.patch_size,
+                                batch_size=args.batch_size, mode='train')
+        valLoader = prepare_data(sr_dir=args.srvaldir, lr_dir=args.lrvaldir, patch_size=args.patch_size,
+                             batch_size=args.batch_size, mode='val')
+
+        optimizer = optim.SGD(model.parameters(), lr=args.learning_rate, momentum=args.momentum)
+        scheduler = lr_scheduler.MultiStepLR(optimizer, milestones=[200, 500], gamma=0.1)
+
         best_loss = float('inf')
         for epoch in range(1, args.num_epochs + 1):
             scheduler.step()
@@ -164,6 +170,7 @@ def main(args):
             print('[Epoch: {0:02}/{1:02}]'
                   '\t[TrainLoss:{2:.4f}]'
                   '\t[ValLoss:{3:.4f}]').format(epoch, args.num_epochs, train_loss, val_loss)
+
     elif args.mode == 'test':
 
         testLoader = prepare_data(sr_dir=args.srtestdir, lr_dir=args.lrtestdir, patch_size='',
