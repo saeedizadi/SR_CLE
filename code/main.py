@@ -27,7 +27,7 @@ def prepare_data(sr_dir, lr_dir, patch_size, batch_size, mode='train', shuffle=T
     elif mode is 'train':
         transform = co_transforms.Compose(
             [co_transforms.RandomCrop(patch_size, patch_size), co_transforms.RandomHorizontalFlip(),
-             co_transforms.RandomVerticalFlip(), co_transforms.RandomRotation((0, 90)), co_transforms.ToTensor()])
+             co_transforms.RandomVerticalFlip(), co_transforms.ToTensor()])
     else:
         transform = co_transforms.ToTensor()
 
@@ -40,16 +40,18 @@ def train(model, trData, optimizer, lossfn, batch_size, lowres_dim, cuda=True):
     train_loss = 0.
     model.train()
     downsample = transforms.Compose([transforms.ToPILImage(), transforms.Resize(lowres_dim), transforms.ToTensor()])
-    for step, (high, _) in enumerate(trData):
+    for step, (high, low) in enumerate(trData):
 
         #        mat1 = np.transpose(image[0].numpy(), (1, 2, 0))
         #        mat2 = np.transpose(target[0].numpy(), (1, 2, 0))
         #        final_frame = cv2.hconcat((mat1, mat2))
         #        cv2.imshow("", final_frame )
         #        cv2.waitKey(0)
-        low = torch.FloatTensor(high.size()[0], 3, lowres_dim, lowres_dim)
-        for j in range(high.size()[0]):
-            low[j] = downsample(high[j])
+
+        # -- Removes online downsampling ---
+        # low = torch.FloatTensor(high.size()[0], 3, lowres_dim, lowres_dim)
+        # for j in range(high.size()[0]):
+        #     low[j] = downsample(high[j])
 
         if cuda:
             low = low.cuda()
@@ -73,11 +75,12 @@ def validate(model, vlData, lossfn, batch_size, lowres_dim, cuda=True):
     val_loss = 0.
     model.eval()
     downsample = transforms.Compose([transforms.ToPILImage(), transforms.Resize(lowres_dim), transforms.ToTensor()])
-    for step, (high, _) in enumerate(vlData):
+    for step, (high, low) in enumerate(vlData):
 
-        low = torch.FloatTensor(high.size()[0], 3, lowres_dim, lowres_dim)
-        for j in range(high.size()[0]):
-            low[j] = downsample(high[j])
+        # --- removes online downsampling
+        # low = torch.FloatTensor(high.size()[0], 3, lowres_dim, lowres_dim)
+        # for j in range(high.size()[0]):
+        #     low[j] = downsample(high[j])
 
         if cuda:
             low = low.cuda()
@@ -98,11 +101,12 @@ def test(model, testData, savedir, lowres_dim, cuda=True):
     downsample = transforms.Compose([transforms.ToPILImage(), transforms.Resize(lowres_dim), transforms.ToTensor()])
     toImage = transforms.ToPILImage()
     batch_size = 10
-    for step, (high, _) in enumerate(testData):
+    for step, (high, low) in enumerate(testData):
 
-        low = torch.FloatTensor(high.size()[0], 3, lowres_dim, lowres_dim)
-        for j in range(high.size()[0]):
-            low[j] = downsample(high[j])
+        # --- removes online downsampling ---
+        # low = torch.FloatTensor(high.size()[0], 3, lowres_dim, lowres_dim)
+        # for j in range(high.size()[0]):
+        #     low[j] = downsample(high[j])
 
         if cuda:
             low = low.cuda()
