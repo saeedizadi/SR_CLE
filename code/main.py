@@ -174,7 +174,7 @@ def main(args):
         valLoader = prepare_data(sr_dir=args.srvaldir, lr_dir=args.lrvaldir, patch_size=args.patch_size,
                                  batch_size=args.batch_size, mode='val')
 
-        optimizer = optim.SGD(model.parameters(), lr=args.learning_rate, momentum=args.momentum)
+        optimizer = optim.SGD(model.parameters(), lr=args.learning_rate, momentum=args.momentum, weight_decay=args.weight_decay)
         scheduler = lr_scheduler.MultiStepLR(optimizer, milestones=[100, 200], gamma=0.1)
 
         best_loss = float('inf')

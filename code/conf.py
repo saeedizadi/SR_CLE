@@ -14,12 +14,13 @@ defaults.CUDA = False
 # --- define the namespace for defaults for train mode
 default_train = argparse.Namespace()
 default_train.BATCH_SIZE = 32
-default_train.LEARNING_RATE = 0.01
-default_train.EPOCHS = 250
+default_train.LEARNING_RATE = 0.1
+default_train.EPOCHS = 300
 default_train.MOMENTUM = 0.9
-default_train.PATCH_SIZE  = 64
+default_train.WEIGHT_DECAY = 0.0005
+default_train.PATCH_SIZE  = 32
 default_train.IMAGE_SIZE  = 256
-default_train.DOWNSCALE_RATIO= 2
+default_train.DOWNSCALE_RATIO = 2
 default_train.SR_TRAIN_DIR = '/local-scratch/saeedI/CLE/data/highres/train'
 default_train.LR_TRAIN_DIR = '/local-scratch/saeedI/CLE/data/lowres/train'
 default_train.SR_VAL_DIR = '/local-scratch/saeedI/CLE/data/highres/val'
@@ -65,6 +66,7 @@ def get_arguments():
     parser_train.add_argument('-nepoch', '--num-epochs', type=int, default=default_train.EPOCHS)
     parser_train.add_argument('-lr', '--learning-rate', type=float, default=default_train.LEARNING_RATE)
     parser_train.add_argument('-mom', '--momentum', type=float, default=default_train.MOMENTUM)
+    parser_train.add_argument('--weight-decay', type=float, default=default_train.WEIGHT_DECAY)
     parser_train.add_argument('-psize', '--patch-size', type=int, default=default_train.PATCH_SIZE)
     parser_train.add_argument('--image-size', type=int, default=default_train.IMAGE_SIZE)
     parser_train.add_argument('-bsize', '--batch-size', type=int, default=default_train.BATCH_SIZE)
