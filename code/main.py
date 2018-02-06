@@ -22,12 +22,10 @@ from visualize import Dashboard
 
 def prepare_data(sr_dir, lr_dir, patch_size, batch_size, mode='train', shuffle=True):
     if mode is 'val':
-        print "I'm here"
         transform = co_transforms.Compose([co_transforms.RandomCrop(patch_size, patch_size), co_transforms.ToTensor()])
     elif mode is 'train':
         transform = co_transforms.Compose(
-            [co_transforms.RandomCrop(patch_size, patch_size), co_transforms.RandomHorizontalFlip(),
-             co_transforms.RandomVerticalFlip(), co_transforms.ToTensor()])
+            [co_transforms.RandomCrop(patch_size, patch_size), co_transforms.RandomHorizontalFlip(), co_transforms.RandomVerticalFlip(), co_transforms.ToTensor()])
     else:
         transform = co_transforms.ToTensor()
 
@@ -39,7 +37,7 @@ def prepare_data(sr_dir, lr_dir, patch_size, batch_size, mode='train', shuffle=T
 def train(model, trData, optimizer, lossfn, batch_size, lowres_dim, cuda=True):
     train_loss = 0.
     model.train()
-    downsample = transforms.Compose([transforms.ToPILImage(), transforms.Resize(lowres_dim), transforms.ToTensor()])
+#    downsample = transforms.Compose([transforms.ToPILImage(), transforms.Resize(lowres_dim), transforms.ToTensor()])
     for step, (high, low) in enumerate(trData):
 
         #        mat1 = np.transpose(image[0].numpy(), (1, 2, 0))
@@ -74,7 +72,7 @@ def train(model, trData, optimizer, lossfn, batch_size, lowres_dim, cuda=True):
 def validate(model, vlData, lossfn, batch_size, lowres_dim, cuda=True):
     val_loss = 0.
     model.eval()
-    downsample = transforms.Compose([transforms.ToPILImage(), transforms.Resize(lowres_dim), transforms.ToTensor()])
+    #downsample = transforms.Compose([transforms.ToPILImage(), transforms.Resize(lowres_dim), transforms.ToTensor()])
     for step, (high, low) in enumerate(vlData):
 
         # --- removes online downsampling
