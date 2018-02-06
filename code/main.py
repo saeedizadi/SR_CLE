@@ -15,7 +15,7 @@ from dataset import SRDataset
 from generator import Generator
 
 
-def prepare_data(sr_dir, lr_dir, patch_size, batch_size, mode='train'):
+def prepare_data(sr_dir, lr_dir, patch_size, batch_size, mode='train', shuffle=True):
     if mode is 'val':
         print "I'm here"
         transform = co_transforms.Compose([co_transforms.RandomCrop(patch_size, patch_size), co_transforms.ToTensor()])
@@ -27,7 +27,7 @@ def prepare_data(sr_dir, lr_dir, patch_size, batch_size, mode='train'):
         transform = co_transforms.ToTensor()
 
     dset = SRDataset(highres_root=sr_dir, lowres_root=lr_dir, transform=transform)
-    dloader = data.DataLoader(dset, batch_size=batch_size, shuffle=False)
+    dloader = data.DataLoader(dset, batch_size=batch_size, shuffle=shuffle)
     return dloader
 
 
@@ -100,15 +100,14 @@ def test(model, testData, savedir, lowres_dim, cuda=True):
 
         if cuda:
             low = low.cuda()
-#
         low = Variable(low, volatile=True)
-#
         output = model(low)
+        filenames = testData.dataset.filenames
         for j in range(output.size()[0]):
+            index = step*output.size()[0]+j
             output_img = toImage(output[j].data.cpu())
-            filename = os.path.join(args.savedir, 'result_{0:03}.bmp'.format(step*output.size()[0]+ j))
-            print filename
-            output_img.save(filename,'BMP')
+            res_filename = os.path.join(args.savedir, filenames[index] + '_result.bmp')
+            output_img.save(res_filename,'BMP')
 
 
 
@@ -174,7 +173,7 @@ def main(args):
     elif args.mode == 'test':
 
         testLoader = prepare_data(sr_dir=args.srtestdir, lr_dir=args.lrtestdir, patch_size='',
-                                batch_size=args.batch_size, mode='test')
+                                batch_size=args.batch_size, mode='test', shuffle=False)
 
         filename = 'checkpoint_{0:02}.pth.tar'.format(args.state)
         checkpoint = torch.load(os.path.join(args.weightdir, filename))
