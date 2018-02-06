@@ -1,17 +1,17 @@
+import glob
 import os
 import shutil
-import glob
-import numpy as np
-from PIL import Image
-import cv2
 
+import cv2
+import numpy as np
 import torch
 import torch.nn as nn
 import torch.optim as optim
+import torch.optim.lr_scheduler as lr_scheduler
 import torch.utils.data as data
 import torchvision.transforms as transforms
+from PIL import Image
 from torch.autograd import Variable
-import torch.optim.lr_scheduler as lr_scheduler
 
 import co_transforms as co_transforms
 from conf import get_arguments
@@ -25,7 +25,8 @@ def prepare_data(sr_dir, lr_dir, patch_size, batch_size, mode='train', shuffle=T
         transform = co_transforms.Compose([co_transforms.RandomCrop(patch_size, patch_size), co_transforms.ToTensor()])
     elif mode is 'train':
         transform = co_transforms.Compose(
-            [co_transforms.RandomCrop(patch_size, patch_size), co_transforms.RandomHorizontalFlip(), co_transforms.RandomVerticalFlip(), co_transforms.ToTensor()])
+            [co_transforms.RandomCrop(patch_size, patch_size), co_transforms.RandomHorizontalFlip(),
+             co_transforms.RandomVerticalFlip(), co_transforms.ToTensor()])
     else:
         transform = co_transforms.ToTensor()
 
@@ -37,14 +38,14 @@ def prepare_data(sr_dir, lr_dir, patch_size, batch_size, mode='train', shuffle=T
 def train(model, trData, optimizer, lossfn, batch_size, lowres_dim, cuda=True):
     train_loss = 0.
     model.train()
-#    downsample = transforms.Compose([transforms.ToPILImage(), transforms.Resize(lowres_dim), transforms.ToTensor()])
+    #    downsample = transforms.Compose([transforms.ToPILImage(), transforms.Resize(lowres_dim), transforms.ToTensor()])
     for step, (high, low) in enumerate(trData):
 
-        #        mat1 = np.transpose(image[0].numpy(), (1, 2, 0))
-        #        mat2 = np.transpose(target[0].numpy(), (1, 2, 0))
-        #        final_frame = cv2.hconcat((mat1, mat2))
-        #        cv2.imshow("", final_frame )
-        #        cv2.waitKey(0)
+        mat1 = np.transpose(high[0].numpy(), (1, 2, 0))
+        mat2 = np.transpose(low[0].numpy(), (1, 2, 0))
+        final_frame = cv2.hconcat((mat1, mat2))
+        cv2.imshow("", final_frame)
+        cv2.waitKey(0)
 
         # -- Removes online downsampling ---
         # low = torch.FloatTensor(high.size()[0], 3, lowres_dim, lowres_dim)
@@ -72,7 +73,7 @@ def train(model, trData, optimizer, lossfn, batch_size, lowres_dim, cuda=True):
 def validate(model, vlData, lossfn, batch_size, lowres_dim, cuda=True):
     val_loss = 0.
     model.eval()
-    #downsample = transforms.Compose([transforms.ToPILImage(), transforms.Resize(lowres_dim), transforms.ToTensor()])
+    # downsample = transforms.Compose([transforms.ToPILImage(), transforms.Resize(lowres_dim), transforms.ToTensor()])
     for step, (high, low) in enumerate(vlData):
 
         # --- removes online downsampling
@@ -93,8 +94,8 @@ def validate(model, vlData, lossfn, batch_size, lowres_dim, cuda=True):
 
     return float(val_loss) / len(vlData)
 
-def test(model, testData, savedir, lowres_dim, cuda=True):
 
+def test(model, testData, savedir, lowres_dim, cuda=True):
     model.eval()
     downsample = transforms.Compose([transforms.ToPILImage(), transforms.Resize(lowres_dim), transforms.ToTensor()])
     toImage = transforms.ToPILImage()
@@ -115,13 +116,13 @@ def test(model, testData, savedir, lowres_dim, cuda=True):
             index = step * batch_size + j
             output_img = toImage(output[j].data.cpu())
             res_filename = os.path.join(args.savedir, filenames[index] + '_result.bmp')
-            output_img.save(res_filename,'BMP')
-
+            output_img.save(res_filename, 'BMP')
 
 
 def save_snapshot(state, filename='checkpoint.pth.tar', savedir='./checkpoints'):
     fullname = os.path.join(savedir, filename)
     torch.save(state, fullname)
+
 
 def show_results(highdir, lowdir, resdir, port=8097):
     dashboard = Dashboard(port=port)
@@ -146,15 +147,12 @@ def show_results(highdir, lowdir, resdir, port=8097):
     dashboard.grid_plot(batch, nrow=3)
 
 
-
-
 def main(args):
     # --- load data ---
 
     # --- define the model and NN settings ---
-    model = Generator(5, 2)
+    model = Generator(16, 2)
     criterion = nn.MSELoss()
-
 
     if args.cuda:
         model = model.cuda()
@@ -165,10 +163,10 @@ def main(args):
         trLoader = prepare_data(sr_dir=args.srtraindir, lr_dir=args.lrtraindir, patch_size=args.patch_size,
                                 batch_size=args.batch_size, mode='train')
         valLoader = prepare_data(sr_dir=args.srvaldir, lr_dir=args.lrvaldir, patch_size=args.patch_size,
-                             batch_size=args.batch_size, mode='val')
+                                 batch_size=args.batch_size, mode='val')
 
         optimizer = optim.SGD(model.parameters(), lr=args.learning_rate, momentum=args.momentum)
-        scheduler = lr_scheduler.MultiStepLR(optimizer, milestones=[200, 500], gamma=0.1)
+        scheduler = lr_scheduler.MultiStepLR(optimizer, milestones=[100, 200], gamma=0.1)
 
         best_loss = float('inf')
         for epoch in range(1, args.num_epochs + 1):
@@ -185,7 +183,6 @@ def main(args):
                 save_snapshot({'epoch': epoch, 'state_dict': model.state_dict(), 'optimizer': optimizer.state_dict()},
                               filename=filename, savedir=args.savedir)
 
-
                 print('[Epoch: {0:02}/{1:02}]'
                       '\t[TrainLoss:{2:.4f}]'
                       '\t[ValLoss:{3:.4f}]').format(epoch, args.num_epochs, train_loss, val_loss),
@@ -197,7 +194,6 @@ def main(args):
                     best_loss = train_loss
                 continue
 
-
             print('[Epoch: {0:02}/{1:02}]'
                   '\t[TrainLoss:{2:.4f}]'
                   '\t[ValLoss:{3:.4f}]').format(epoch, args.num_epochs, train_loss, val_loss)
@@ -205,18 +201,17 @@ def main(args):
     elif args.mode == 'test':
 
         testLoader = prepare_data(sr_dir=args.srtestdir, lr_dir=args.lrtestdir, patch_size='',
-                                batch_size=args.batch_size, mode='test', shuffle=False)
+                                  batch_size=args.batch_size, mode='test', shuffle=False)
 
         filename = 'checkpoint_{0:02}.pth.tar'.format(args.state)
         checkpoint = torch.load(os.path.join(args.weightdir, filename))
 
         model.load_state_dict(checkpoint['state_dict'])
 
-        test(model,testLoader, args.savedir, lowres_dim=args.image_size / args.downscale_ratio)
+        test(model, testLoader, args.savedir, lowres_dim=args.image_size / args.downscale_ratio)
 
     elif args.mode == "show":
         show_results(args.hrdir, args.lrdir, args.resdir, port=args.visdom_port)
-
 
 
 if __name__ == '__main__':

@@ -15,7 +15,7 @@ class Residual_Block(nn.Module):
     def forward(self,x):
 
         #added RELU after the addition.
-        return  F.prelu(self.layers(x) + x)
+        return  F.relu(self.layers(x) + x)
 
 
 class UpSample_Block(nn.Module):
