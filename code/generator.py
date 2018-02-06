@@ -1,29 +1,34 @@
 import torch.nn as nn
 
 from utils import initialize_weights
-
+import torch.nn.functional as F
 class Residual_Block(nn.Module):
     def __init__(self, in_channels=64, kernel_size=3, out_channels= 64, stride=1):
         super(Residual_Block, self).__init__()
 
         self.layers = nn.Sequential(nn.Conv2d(in_channels=in_channels, out_channels=out_channels, kernel_size=kernel_size, stride=stride, padding=1, bias=True),
                                     nn.BatchNorm2d(out_channels),
-                                    nn.ReLU(inplace=True),
+                                    nn.PReLU(),
                                     nn.Conv2d(in_channels=out_channels, out_channels=out_channels, kernel_size=kernel_size, stride=stride, padding=1, bias=True),
                                     nn.BatchNorm2d(out_channels)
                                     )
     def forward(self,x):
-        return self.layers(x) + x
+
+        #added RELU after the addition.
+        return  F.relu(self.layers(x) + x)
 
 
 class UpSample_Block(nn.Module):
-    def __init__(self, in_channels=64, out_channels=256):
+
+    # changed 256 --> 64 since pixelShuffle has been removed
+    def __init__(self, in_channels=64, out_channels=64):
         super(UpSample_Block, self).__init__()
 
         self.layers = nn.Sequential(nn.Conv2d(in_channels=in_channels, out_channels=out_channels, kernel_size=3, stride=1, padding=1, bias=True),
-                                    nn.PixelShuffle(2),
-                                    nn.ReLU(inplace=True))
 
+                                    #Removes Upamspling
+                                    #nn.PixelShuffle(2),
+                                    nn.PReLU())
     def forward(self,x):
         return self.layers(x)
 
@@ -36,7 +41,7 @@ class Generator(nn.Module):
         self.nUpBlks = nUpBlks
 
         self.layers0 = nn.Sequential(nn.Conv2d(3, 64, kernel_size=9, stride=1, padding=4, bias=True),
-                                     nn.ReLU(inplace=True))
+                                     nn.PReLU())
 
         self.layers1 = nn.Sequential(nn.Conv2d(64, 64, kernel_size=3, stride=1, padding=1, bias=True),
                                      nn.BatchNorm2d(64)
