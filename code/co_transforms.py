@@ -649,7 +649,7 @@ class Grayscale(object):
     def __init__(self, num_output_channels=1):
         self.num_output_channels = num_output_channels
 
-    def __call__(self, img):
+    def __call__(self, img, target):
         """
         Args:
             img (PIL Image): Image to be converted to grayscale.
@@ -657,7 +657,7 @@ class Grayscale(object):
         Returns:
             PIL Image: Randomly grayscaled image.
         """
-        return F.to_grayscale(img, num_output_channels=self.num_output_channels)
+        return F.to_grayscale(img, num_output_channels=self.num_output_channels), F.to_grayscale(target, num_output_channels=self.num_output_channels)
 
     def __repr__(self):
         return self.__class__.__name__ + '()'

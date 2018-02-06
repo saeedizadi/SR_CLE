@@ -40,14 +40,16 @@ class Generator(nn.Module):
         self.nResBlks = nResBlks
         self.nUpBlks = nUpBlks
 
-        self.layers0 = nn.Sequential(nn.Conv2d(3, 64, kernel_size=9, stride=1, padding=4, bias=True),
+        # --- change 3 --> 1 as the images are converted to grayscale
+        self.layers0 = nn.Sequential(nn.Conv2d(1, 64, kernel_size=9, stride=1, padding=4, bias=True),
                                      nn.PReLU())
 
         self.layers1 = nn.Sequential(nn.Conv2d(64, 64, kernel_size=3, stride=1, padding=1, bias=True),
                                      nn.BatchNorm2d(64)
                                      )
 
-        self.conv = nn.Conv2d(64, 3, kernel_size=9, stride=1, padding=4, bias=True)
+        # --- change 3 --> 1 as the images are converted to grayscale
+        self.conv = nn.Conv2d(64, 1, kernel_size=9, stride=1, padding=4, bias=True)
 
         self.resblocks = nn.ModuleList([Residual_Block() for i in range(nResBlks)])
         self.upsamplingblocks = nn.ModuleList([UpSample_Block() for i in range(nUpBlks)])
@@ -71,6 +73,7 @@ class Generator(nn.Module):
         for i in range(self.nUpBlks):
             y = self.upsamplingblocks[i](y)
 
-        y = self.conv(y)
+        # --- added sigmoid to scale output in [0,1]
+        y = F.sigmoid(self.conv(y))
 
         return y
