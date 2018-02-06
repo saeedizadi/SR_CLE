@@ -13,20 +13,20 @@ defaults.CUDA = False
 
 # --- define the namespace for defaults for train mode
 default_train = argparse.Namespace()
-default_train.BATCH_SIZE = 32
-default_train.LEARNING_RATE = 0.1
+default_train.BATCH_SIZE = 16
+default_train.LEARNING_RATE = 0.01
 default_train.EPOCHS = 300
 default_train.MOMENTUM = 0.9
 default_train.WEIGHT_DECAY = 0.0005
-default_train.PATCH_SIZE  = 32
-default_train.IMAGE_SIZE  = 256
+default_train.PATCH_SIZE  = 64
+default_train.IMAGE_SIZE  = 1024
 default_train.DOWNSCALE_RATIO = 2
 default_train.SR_TRAIN_DIR = '/local-scratch/saeedI/CLE/data/highres/train'
 default_train.LR_TRAIN_DIR = '/local-scratch/saeedI/CLE/data/lowres/train'
 default_train.SR_VAL_DIR = '/local-scratch/saeedI/CLE/data/highres/val'
 default_train.LR_VAL_DIR = '/local-scratch/saeedI/CLE/data/lowres/val'
 default_train.NUM_WORKER = 2
-default_train.LOG_STEP= 50
+default_train.LOG_STEP= 20
 default_train.SAVE_DIR= '../checkpoints'
 
 default_test = argparse.Namespace()
