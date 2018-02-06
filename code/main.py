@@ -97,8 +97,9 @@ def test(model, testData, savedir, lowres_dim, cuda=True):
     model.eval()
     downsample = transforms.Compose([transforms.ToPILImage(), transforms.Resize(lowres_dim), transforms.ToTensor()])
     toImage = transforms.ToPILImage()
-
+    batch_size = 10
     for step, (high, _) in enumerate(testData):
+
         low = torch.FloatTensor(high.size()[0], 3, lowres_dim, lowres_dim)
         for j in range(high.size()[0]):
             low[j] = downsample(high[j])
@@ -109,7 +110,7 @@ def test(model, testData, savedir, lowres_dim, cuda=True):
         output = model(low)
         filenames = testData.dataset.filenames
         for j in range(output.size()[0]):
-            index = step*output.size()[0]+j
+            index = step * batch_size + j
             output_img = toImage(output[j].data.cpu())
             res_filename = os.path.join(args.savedir, filenames[index] + '_result.bmp')
             output_img.save(res_filename,'BMP')

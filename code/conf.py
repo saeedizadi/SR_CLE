@@ -41,8 +41,8 @@ default_test.SAVE_DIR= '../results'
 default_test.WEIGHT_DIR= '../checkpoints'
 
 default_show = argparse.Namespace()
-default_show.HIGHRES= '/local-scratch/saeedI/CLE/data/highres/val'
-default_show.LOWRES= '/local-scratch/saeedI/CLE/data/lowres/val'
+default_show.HIGHRES= '/local-scratch/saeedI/CLE/data/highres/train'
+default_show.LOWRES= '/local-scratch/saeedI/CLE/data/lowres/train'
 default_show.RESULTS= '../results'
 
 
