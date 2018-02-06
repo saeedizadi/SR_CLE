@@ -49,12 +49,11 @@ def train(model, trData, optimizer, lossfn, batch_size, lowres_dim, cuda=True):
     model.train()
     #    downsample = transforms.Compose([transforms.ToPILImage(), transforms.Resize(lowres_dim), transforms.ToTensor()])
     for step, (high, low) in enumerate(trData):
-
-        mat1 = np.transpose(high[0].numpy(), (1, 2, 0))
-        mat2 = np.transpose(low[0].numpy(), (1, 2, 0))
-        final_frame = cv2.hconcat((mat1, mat2))
-        cv2.imshow("", final_frame)
-        cv2.waitKey(0)
+       # mat1 = np.transpose(high[0].numpy(), (1, 2, 0))
+       # mat2 = np.transpose(low[0].numpy(), (1, 2, 0))
+       # final_frame = cv2.hconcat((mat1, mat2))
+       # cv2.imshow("", final_frame)
+       # cv2.waitKey(0)
 
         # -- Removes online downsampling ---
         # low = torch.FloatTensor(high.size()[0], 3, lowres_dim, lowres_dim)
@@ -137,7 +136,7 @@ def show_results(highdir, lowdir, resdir, port=8097):
     dashboard = Dashboard(port=port)
     filenames = [k.split('/')[-1].split('.')[0] for k in glob.glob(os.path.join(highdir, '*.jpg'))]
 
-    batch = np.empty((0, 3, 1024, 1024))
+    batch = np.empty((0, 3, 256, 256))
 
     for i in range(20):
         currfile = filenames[i]
