@@ -32,7 +32,7 @@ def main(args):
     for (dirpath, _ , _) in os.walk(os.path.join(root, 'lowres')):
         filenames = [k.split('/')[-1].split('.')[0] for k in glob.glob(os.path.join(dirpath,'*.jpg'))]
         for f in tqdm(filenames):
-            im = np.array(Image.open(os.path.join(dirpath, f + args.ext)))
+            im = np.array(Image.open(os.path.join(dirpath, f + args.ext)).convert('RGB'))
             im = cv2.filter2D(im, -1, kernel)
             original_size = im.shape
             im_ds = downsample(im, args.magnif)
