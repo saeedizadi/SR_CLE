@@ -40,6 +40,11 @@ default_test.STATE= 1000
 default_test.SAVE_DIR= '../results'
 default_test.WEIGHT_DIR= '../checkpoints'
 
+default_show = argparse.Namespace()
+default_show.HIGHRES= '/local-scratch/saeedI/CLE/data/highres/val'
+default_show.LOWRES= '/local-scratch/saeedI/CLE/data/lowres/val'
+default_show.RESULTS= '../results'
+
 
 # --- define the function to define the parsers and subparsers and get the arguments
 def get_arguments():
@@ -83,6 +88,9 @@ def get_arguments():
     parser_test.add_argument('--weightdir', type=str, default=default_test.WEIGHT_DIR)
     parser_test.add_argument('--state', type=int, default=default_test.STATE)
 
-
+    parser_show = subparser.add_parser('show')
+    parser_show.add_argument('--hrdir', type=str, default=default_show.HIGHRES)
+    parser_show.add_argument('--lrdir', type=str, default=default_show.LOWRES)
+    parser_show.add_argument('--resdir', type=str, default=default_show.RESULTS)
     args = parser.parse_args()
     return args

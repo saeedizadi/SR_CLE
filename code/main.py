@@ -1,5 +1,9 @@
 import os
 import shutil
+import glob
+import numpy as np
+from PIL import Image
+import cv2
 
 import torch
 import torch.nn as nn
@@ -13,6 +17,7 @@ import co_transforms as co_transforms
 from conf import get_arguments
 from dataset import SRDataset
 from generator import Generator
+from visualize import Dashboard
 
 
 def prepare_data(sr_dir, lr_dir, patch_size, batch_size, mode='train', shuffle=True):
@@ -115,6 +120,30 @@ def save_snapshot(state, filename='checkpoint.pth.tar', savedir='./checkpoints')
     fullname = os.path.join(savedir, filename)
     torch.save(state, fullname)
 
+def show_results(highdir, lowdir, resdir, port=8097):
+    dashboard = Dashboard(port=port)
+    filenames = [k.split('/')[-1].split('.')[0] for k in glob.glob(os.path.join(highdir, '*.jpg'))]
+
+    batch = np.empty((0, 3, 1024, 1024))
+
+    for i in range(20):
+        currfile = filenames[i]
+        im = np.array(Image.open(os.path.join(highdir, currfile + ".jpg")).convert('RGB'))
+        im = im.transpose((2, 0, 1))
+        batch = np.append(batch, im[np.newaxis, :, :, :], axis=0)
+
+        im = np.array(Image.open(os.path.join(lowdir, currfile + ".jpg")).convert('RGB'))
+        im = im.transpose((2, 0, 1))
+        batch = np.append(batch, im[np.newaxis, :, :, :], axis=0)
+
+        im = np.array(Image.open(os.path.join(resdir, currfile + "_result.bmp")).convert('RGB'))
+        im = im.transpose((2, 0, 1))
+        batch = np.append(batch, im[np.newaxis, :, :, :], axis=0)
+
+    dashboard.grid_plot(batch, nrow=3)
+
+
+
 
 def main(args):
     # --- load data ---
@@ -181,6 +210,9 @@ def main(args):
         model.load_state_dict(checkpoint['state_dict'])
 
         test(model,testLoader, args.savedir, lowres_dim=args.image_size / args.downscale_ratio)
+
+    elif args.mode == "show":
+        show_results(args.hrdir, args.lrdir, args.resdir, port=args.visdom_port)
 
 
 
