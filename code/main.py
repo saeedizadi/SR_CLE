@@ -27,7 +27,7 @@ def prepare_data(sr_dir, lr_dir, patch_size, batch_size, mode='train', shuffle=T
     elif mode is 'train':
         transform = co_transforms.Compose(
             [co_transforms.RandomCrop(patch_size, patch_size), co_transforms.RandomHorizontalFlip(),
-             co_transforms.RandomVerticalFlip(), co_transforms.RandomRotation((0, 90)), co_transforms.ToTensor()])
+             co_transforms.RandomVerticalFlip(), co_transforms.ToTensor()])
     else:
         transform = co_transforms.ToTensor()
 
