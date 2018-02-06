@@ -22,13 +22,22 @@ from visualize import Dashboard
 
 def prepare_data(sr_dir, lr_dir, patch_size, batch_size, mode='train', shuffle=True):
     if mode is 'val':
-        transform = co_transforms.Compose([co_transforms.RandomCrop(patch_size, patch_size), co_transforms.ToTensor()])
+        transform = co_transforms.Compose(
+            [co_transforms.Grayscale(),
+            co_transforms.RandomCrop(patch_size, patch_size),
+            co_transforms.ToTensor()])
+
     elif mode is 'train':
         transform = co_transforms.Compose(
-            [co_transforms.RandomCrop(patch_size, patch_size), co_transforms.RandomHorizontalFlip(),
-             co_transforms.RandomVerticalFlip(), co_transforms.ToTensor()])
+            [co_transforms.Grayscale(),
+             co_transforms.RandomCrop(patch_size, patch_size),
+             co_transforms.RandomHorizontalFlip(),
+             co_transforms.RandomVerticalFlip(),
+             co_transforms.ToTensor()])
     else:
-        transform = co_transforms.ToTensor()
+        transform = co_transforms.Compose(
+            [co_transforms.Grayscale(),
+             co_transforms.ToTensor()])
 
     dset = SRDataset(highres_root=sr_dir, lowres_root=lr_dir, transform=transform)
     dloader = data.DataLoader(dset, batch_size=batch_size, shuffle=shuffle)
@@ -151,7 +160,7 @@ def main(args):
     # --- load data ---
 
     # --- define the model and NN settings ---
-    model = Generator(16, 2)
+    model = Generator(16, 1)
     criterion = nn.MSELoss()
 
     if args.cuda:
@@ -165,7 +174,7 @@ def main(args):
         valLoader = prepare_data(sr_dir=args.srvaldir, lr_dir=args.lrvaldir, patch_size=args.patch_size,
                                  batch_size=args.batch_size, mode='val')
 
-        optimizer = optim.SGD(model.parameters(), lr=args.learning_rate, momentum=args.momentum)
+        optimizer = optim.SGD(model.parameters(), lr=args.learning_rate, momentum=args.momentum, weight_decay=args.weight_decay)
         scheduler = lr_scheduler.MultiStepLR(optimizer, milestones=[100, 200], gamma=0.1)
 
         best_loss = float('inf')
