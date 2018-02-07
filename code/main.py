@@ -2,7 +2,6 @@ import glob
 import os
 import shutil
 
-import cv2
 import numpy as np
 import torch
 import torch.nn as nn
@@ -16,6 +15,8 @@ from torch.autograd import Variable
 import co_transforms as co_transforms
 from conf import get_arguments
 from dataset import SRDataset
+from evaluation import PSNR
+from evaluation import SSIM
 from generator import Generator
 from visualize import Dashboard
 
@@ -24,8 +25,8 @@ def prepare_data(sr_dir, lr_dir, patch_size, batch_size, mode='train', shuffle=T
     if mode is 'val':
         transform = co_transforms.Compose(
             [co_transforms.Grayscale(),
-            co_transforms.RandomCrop(patch_size, patch_size),
-            co_transforms.ToTensor()])
+             co_transforms.RandomCrop(patch_size, patch_size),
+             co_transforms.ToTensor()])
 
     elif mode is 'train':
         transform = co_transforms.Compose(
@@ -49,11 +50,11 @@ def train(model, trData, optimizer, lossfn, batch_size, lowres_dim, cuda=True):
     model.train()
     #    downsample = transforms.Compose([transforms.ToPILImage(), transforms.Resize(lowres_dim), transforms.ToTensor()])
     for step, (high, low) in enumerate(trData):
-       # mat1 = np.transpose(high[0].numpy(), (1, 2, 0))
-       # mat2 = np.transpose(low[0].numpy(), (1, 2, 0))
-       # final_frame = cv2.hconcat((mat1, mat2))
-       # cv2.imshow("", final_frame)
-       # cv2.waitKey(0)
+        # mat1 = np.transpose(high[0].numpy(), (1, 2, 0))
+        # mat2 = np.transpose(low[0].numpy(), (1, 2, 0))
+        # final_frame = cv2.hconcat((mat1, mat2))
+        # cv2.imshow("", final_frame)
+        # cv2.waitKey(0)
 
         # -- Removes online downsampling ---
         # low = torch.FloatTensor(high.size()[0], 3, lowres_dim, lowres_dim)
@@ -104,8 +105,14 @@ def validate(model, vlData, lossfn, batch_size, lowres_dim, cuda=True):
 
 
 def test(model, testData, savedir, lowres_dim, cuda=True):
+    psnr = PSNR()
+    ssim = SSIM()
+
+    psnr_sum = 0.
+    ssim_sum = 0.
+
     model.eval()
-    downsample = transforms.Compose([transforms.ToPILImage(), transforms.Resize(lowres_dim), transforms.ToTensor()])
+    # downsample = transforms.Compose([transforms.ToPILImage(), transforms.Resize(lowres_dim), transforms.ToTensor()])
     toImage = transforms.ToPILImage()
     batch_size = 10
     for step, (high, low) in enumerate(testData):
@@ -125,6 +132,12 @@ def test(model, testData, savedir, lowres_dim, cuda=True):
             output_img = toImage(output[j].data.cpu())
             res_filename = os.path.join(args.savedir, filenames[index] + '_result.bmp')
             output_img.save(res_filename, 'BMP')
+
+            # --- compute the required scores ---
+            psnr_sum += psnr(high.data.cpu().numpy(), output.data.cpu().numpy())
+            ssim_sum += ssim(high.data.cpu().numpy(), output.data.cpu().numpy())
+
+        return psnr_sum / len(testData.dataset), ssim_sum / len(testData.dataset)
 
 
 def save_snapshot(state, filename='checkpoint.pth.tar', savedir='./checkpoints'):
@@ -173,13 +186,15 @@ def main(args):
         valLoader = prepare_data(sr_dir=args.srvaldir, lr_dir=args.lrvaldir, patch_size=args.patch_size,
                                  batch_size=args.batch_size, mode='val')
 
-        # optimizer = optim.SGD(model.parameters(), lr=args.learning_rate, momentum=args.momentum, weight_decay=args.weight_decay)
-        optimizer = optim.Adam(model.parameters(), lr=args.learning_rate, betas=(0.9,0.999), eps=1e-08)
+        optimizer = optim.SGD(model.parameters(), lr=args.learning_rate, momentum=args.momentum,
+                              weight_decay=args.weight_decay)
+        # optimizer = optim.Adam(model.parameters(), lr=args.learning_rate, betas=(0.9,0.999), eps=1e-08)
         scheduler = lr_scheduler.MultiStepLR(optimizer, milestones=[100, 200], gamma=0.1)
 
         best_loss = float('inf')
         for epoch in range(1, args.num_epochs + 1):
             scheduler.step()
+
             train_loss = train(model=model, trData=trLoader, optimizer=optimizer, lossfn=criterion,
                                batch_size=args.batch_size, lowres_dim=args.patch_size / args.downscale_ratio)
 
@@ -217,7 +232,10 @@ def main(args):
 
         model.load_state_dict(checkpoint['state_dict'])
 
-        test(model, testLoader, args.savedir, lowres_dim=args.image_size / args.downscale_ratio)
+        psnr, ssim = test(model, testLoader, args.savedir, lowres_dim=args.image_size / args.downscale_ratio)
+
+        print('[PSNR: {0:.4f}]'
+              '\t[SSIM: {1:.4f}]'.format(psnr, ssim))
 
     elif args.mode == "show":
         show_results(args.hrdir, args.lrdir, args.resdir, port=args.visdom_port)
