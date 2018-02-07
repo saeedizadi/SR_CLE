@@ -47,6 +47,6 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser()
     parser.add_argument('--indir', type=str, default='../data')
     parser.add_argument('--ext', type=str, default='.jpg')
-    parser.add_argument('--magnif', type=int, default=2)
+    parser.add_argument('--magnif', type=int, default=4)
     args = parser.parse_args()
     main(args)
