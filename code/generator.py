@@ -14,14 +14,14 @@ class Residual_Block(nn.Module):
                       kernel_size=kernel_size,
                       stride=stride,
                       padding=1, bias=True),
-            nn.BatchNorm2d(out_channels),
+            # nn.BatchNorm2d(out_channels),
             nn.PReLU(),
             nn.Conv2d(in_channels=out_channels,
                       out_channels=out_channels,
                       kernel_size=kernel_size,
                       stride=stride,
                       padding=1, bias=True),
-            nn.BatchNorm2d(out_channels)
+            # nn.BatchNorm2d(out_channels)
             )
 
     def forward(self, x):
@@ -61,7 +61,7 @@ class Generator(nn.Module):
                                      nn.PReLU())
 
         self.layers1 = nn.Sequential(nn.Conv2d(64, 64, kernel_size=3, stride=1, padding=1, bias=True),
-                                     nn.BatchNorm2d(64)
+                                     # nn.BatchNorm2d(64)
                                      )
 
         # --- change 3 --> 1 as the images are converted to grayscale

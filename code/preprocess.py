@@ -45,9 +45,8 @@ def partiton_images_blockwise(args):
 
             img = Image.new('RGB', (width, height), 255)
             img.paste(piece)
-            cut_currfile = currfile.split('/')[-1].split('.')[0]
-            path = os.path.join(imgdir, cut_currfile +'_crop_{0}.bmp'.format(k+1))
-            path = os.path.join(imgdir, cut_currfile + '_crop_{0}.bmp'.format(k + 1))
+            currfile = currfile.split('/')[-1].split('.')[0]
+            path = os.path.join(imgdir, currfile + '_crop_{0}.bmp'.format(k + 1))
             img.save(path, 'BMP')
 
 
