@@ -20,8 +20,38 @@ def upsample(image, size):
     im_up = misc.imresize(image, size=size, interp='bicubic')
     return im_up
 
+def crop(im, height, width):
+    im_width, im_height = im.size
+    for i in range(im_height//height):
+        for j in range(im_width//width):
+            box = (j * width, i * height, (j + 1) * width, (i + 1) * height)
+            yield im.crop(box)
 
-def main(args):
+
+def partiton_images_blockwise(args):
+
+    imgdir = os.path.join(args.indir, 'train')
+    filenames = glob.glob(os.path.join(imgdir, "*.jpg"))
+    for ind, currfile in enumerate(filenames):
+
+        im = Image.open(currfile).convert('RGB')
+        imgwidth, imgheight = im.size
+
+        height = imgheight / args.sub_ratio
+        width = imgwidth / args.sub_ratio
+
+        start_num = 0
+        for k, piece in enumerate(crop(im, height, width), start_num):
+
+            img = Image.new('RGB', (width, height), 255)
+            img.paste(piece)
+            cut_currfile = currfile.split('/')[-1].split('.')[0]
+            path = os.path.join(imgdir, cut_currfile +'_crop_{0}.bmp'.format(k+1))
+            path = os.path.join(imgdir, cut_currfile + '_crop_{0}.bmp'.format(k + 1))
+            img.save(path, 'BMP')
+
+
+def generate_lowres_dataset(args):
     root = args.indir.rsplit('/', 1)[0]
 
     if os.path.exists(os.path.join(root, 'lowres')):
@@ -43,10 +73,16 @@ def main(args):
             temp.save(os.path.join(dirpath, new_filename))
 
 
+
+def main(args):
+    partiton_images_blockwise(args)
+
+
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
     parser.add_argument('--indir', type=str, default='../data')
     parser.add_argument('--ext', type=str, default='.jpg')
     parser.add_argument('--magnif', type=int, default=4)
+    parser.add_argument('--sub-ratio', type=int, default=2)
     args = parser.parse_args()
     main(args)
