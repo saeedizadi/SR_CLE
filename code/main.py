@@ -178,8 +178,8 @@ def main(args):
     # --- load data ---
 
     # --- define the model and NN settings ---
-    model = Generator(36, 1)
-    criterion = nn.L1Loss()
+    model = Generator(16, 1)
+    criterion = nn.MSELoss()
 
     if args.cuda:
         model = model.cuda()

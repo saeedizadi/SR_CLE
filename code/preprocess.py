@@ -60,7 +60,7 @@ def generate_lowres_dataset(args):
     kernel = np.ones((5, 5), np.float32) / 25
 
     for (dirpath, _, _) in os.walk(os.path.join(root, 'lowres')):
-        filenames = [k.split('/')[-1].split('.')[0] for k in glob.glob(os.path.join(dirpath, '*.jpg'))]
+        filenames = [k.split('/')[-1].split('.')[0] for k in glob.glob(os.path.join(dirpath, '*' + args.ext))]
         for f in tqdm(filenames):
             im = np.array(Image.open(os.path.join(dirpath, f + args.ext)).convert('RGB'))
             im = cv2.filter2D(im, -1, kernel)
@@ -74,14 +74,22 @@ def generate_lowres_dataset(args):
 
 
 def main(args):
-    partiton_images_blockwise(args)
+
+    if args.split:
+        partiton_images_blockwise(args)
+    if args.downscale:
+        generate_lowres_dataset(args)
+
 
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
     parser.add_argument('--indir', type=str, default='../data')
-    parser.add_argument('--ext', type=str, default='.jpg')
+    parser.add_argument('--ext', type=str, default='.bmp')
     parser.add_argument('--magnif', type=int, default=4)
     parser.add_argument('--sub-ratio', type=int, default=2)
+    parser.add_argument('--downscale', action='store_true')
+    parser.add_argument('--split', action='store_true')
+
     args = parser.parse_args()
     main(args)

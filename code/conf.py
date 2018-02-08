@@ -20,7 +20,7 @@ default_train.MOMENTUM = 0.9
 default_train.WEIGHT_DECAY = 0.0005
 default_train.PATCH_SIZE  = 64
 default_train.IMAGE_SIZE  = 512
-default_train.DOWNSCALE_RATIO = 4
+default_train.DOWNSCALE_RATIO = 2
 default_train.SR_TRAIN_DIR = '/local-scratch/saeedI/CLE/data/highres/train'
 default_train.LR_TRAIN_DIR = '/local-scratch/saeedI/CLE/data/lowres/train'
 default_train.SR_VAL_DIR = '/local-scratch/saeedI/CLE/data/highres/val'
@@ -37,7 +37,7 @@ default_test.DOWNSCALE_RATIO= 4
 default_test.SR_TEST_DIR = '/local-scratch/saeedI/CLE/data/highres/val'
 default_test.LR_TEST_DIR = '/local-scratch/saeedI/CLE/data/lowres/val'
 default_test.NUM_WORKER = 2
-default_test.STATE= 40
+default_test.STATE= 20
 default_test.SAVE_DIR= '../results'
 default_test.WEIGHT_DIR= '../checkpoints'
 
