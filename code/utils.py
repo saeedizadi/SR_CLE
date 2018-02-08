@@ -5,6 +5,7 @@ import torch.nn.init as init
 
 def initialize_weights(model, method='kaiming'):
     for m in model.modules():
+        print m
         if isinstance(m, nn.Conv2d) or isinstance(m, nn.ConvTranspose2d) or isinstance(m, nn.Linear):
             if method is 'kaiming':
                 init.kaiming_normal(m.weight.data, np.sqrt(2.0))

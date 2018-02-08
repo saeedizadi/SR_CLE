@@ -18,7 +18,7 @@ from conf import get_arguments
 from dataset import SRDataset
 from evaluation import PSNR
 from evaluation import SSIM
-from generator import Generator
+from SRResNet import SRResNet
 from visualize import Dashboard
 
 
@@ -48,8 +48,14 @@ def prepare_data(sr_dir, lr_dir, patch_size, batch_size, mode='train', shuffle=T
 
 def train(model, trData, optimizer, lossfn, batch_size, lowres_dim, cuda=True):
     train_loss = 0.
+    psnr_sum = 0.
+    ssim_sum = 0.
+
+    psnr = PSNR()
+    ssim = SSIM()
+
     model.train()
-    #    downsample = transforms.Compose([transforms.ToPILImage(), transforms.Resize(lowres_dim), transforms.ToTensor()])
+    #downsample = transforms.Compose([transforms.ToPILImage(), transforms.Resize(lowres_dim), transforms.ToTensor()])
     for step, (high, low) in enumerate(trData):
         # mat1 = np.transpose(high[0].numpy(), (1, 2, 0))
         # mat2 = np.transpose(low[0].numpy(), (1, 2, 0))
@@ -75,9 +81,13 @@ def train(model, trData, optimizer, lossfn, batch_size, lowres_dim, cuda=True):
         loss.backward()
         optimizer.step()
 
-        train_loss += loss.data.cpu().numpy()
 
-    return float(train_loss) / len(trData)
+        train_loss += loss.data.cpu().numpy()
+        psnr_sum += psnr(high.data.cpu().numpy(), output.data.cpu().numpy())
+        ssim_sum += ssim(high.data.cpu().numpy(), output.data.cpu().numpy())
+
+    return float(train_loss) / len(trData.dataset), float(psnr_sum) / len(trData.dataset), \
+           float(ssim_sum) / len(trData.dataset)
 
 
 def validate(model, vlData, lossfn, batch_size, lowres_dim, cuda=True):
@@ -107,7 +117,6 @@ def validate(model, vlData, lossfn, batch_size, lowres_dim, cuda=True):
 
 def test(model, testData, savedir, lowres_dim, cuda=True):
     psnr = PSNR()
-    ssim = SSIM()
 
     psnr_sum = 0.
     ssim_sum = 0.
@@ -178,7 +187,7 @@ def main(args):
     # --- load data ---
 
     # --- define the model and NN settings ---
-    model = Generator(16, 1)
+    model = SRResNet(16, 1)
     criterion = nn.MSELoss()
 
     if args.cuda:
@@ -201,7 +210,7 @@ def main(args):
         for epoch in range(1, args.num_epochs + 1):
             scheduler.step()
 
-            train_loss = train(model=model, trData=trLoader, optimizer=optimizer, lossfn=criterion,
+            train_loss, train_psnr, train_ssim = train(model=model, trData=trLoader, optimizer=optimizer, lossfn=criterion,
                                batch_size=args.batch_size, lowres_dim=args.patch_size / args.downscale_ratio)
 
             val_loss = validate(model=model, vlData=valLoader, lossfn=criterion,
@@ -215,7 +224,9 @@ def main(args):
 
                 print('[Epoch: {0:02}/{1:02}]'
                       '\t[TrainLoss:{2:.4f}]'
-                      '\t[ValLoss:{3:.4f}]').format(epoch, args.num_epochs, train_loss, val_loss),
+                      '\t[TrainPSNR:{3:.4f}]'
+                      '\t[TrainSSIM:{4:.4f}]'
+                      '\t[ValLoss:{5:.4f}]').format(epoch, args.num_epochs, train_loss, train_psnr, train_ssim, val_loss),
                 print('\t [Snapshot]')
 
                 if val_loss < best_loss:
@@ -226,7 +237,10 @@ def main(args):
 
             print('[Epoch: {0:02}/{1:02}]'
                   '\t[TrainLoss:{2:.4f}]'
-                  '\t[ValLoss:{3:.4f}]').format(epoch, args.num_epochs, train_loss, val_loss)
+                  '\t[TrainPSNR:{3:.4f}]'
+                  '\t[TrainSSIM:{4:.4f}]'
+                  '\t[ValLoss:{5:.4f}]').format(epoch, args.num_epochs, train_loss, train_psnr, train_ssim, val_loss),
+            print('\t [Snapshot]')
 
     elif args.mode == 'test':
 

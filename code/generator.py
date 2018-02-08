@@ -1,6 +1,5 @@
 import torch.nn as nn
 import torch.nn.functional as F
-
 from utils import initialize_weights
 
 
@@ -49,22 +48,18 @@ class UpSample_Block(nn.Module):
         return self.layers(x)
 
 
-class Generator(nn.Module):
+class SRResNet(nn.Module):
     def __init__(self, nResBlks, nUpBlks):
-        super(Generator, self).__init__()
+        super(SRResNet, self).__init__()
 
         self.nResBlks = nResBlks
         self.nUpBlks = nUpBlks
 
-        # --- change 3 --> 1 as the images are converted to grayscale
         self.layers0 = nn.Sequential(nn.Conv2d(1, 64, kernel_size=9, stride=1, padding=4, bias=True),
                                      nn.PReLU())
 
-        self.layers1 = nn.Sequential(nn.Conv2d(64, 64, kernel_size=3, stride=1, padding=1, bias=True),
-                                     # nn.BatchNorm2d(64)
-                                     )
+        self.layers1 = nn.Sequential(nn.Conv2d(64, 64, kernel_size=3, stride=1, padding=1, bias=True))
 
-        # --- change 3 --> 1 as the images are converted to grayscale
         self.conv = nn.Conv2d(64, 1, kernel_size=9, stride=1, padding=4, bias=True)
 
         self.resblocks = nn.ModuleList([Residual_Block() for i in range(nResBlks)])
