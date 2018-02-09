@@ -19,21 +19,70 @@ class DenseNetBlock(nn.Module):
         super(DenseNetBlock, self).__init__()
 
         self.features = []
-        self.growth_rate = 16
-        self.num_convs = 8
 
+        self.conv0 = nn.Sequential(nn.Conv2d(1, 128, 3, 1, 1),
+                                   nn.ReLU(inplace=True))
 
+        self.conv1 = nn.Sequential(nn.Conv2d(128,16,3,1,1),
+                                   nn.ReLU(inplace=True))
 
-        self.layers = nn.ModuleList([DenseNetConv(in_channels=(i+1)*self.growth_rate, out_channels=self.growth_rate) for i in range(self.num_convs)])
-        print self.layers
+        self.conv2 = nn.Sequential(nn.Conv2d(16, 16, 3, 1, 1),
+                                   nn.ReLU(inplace=True))
+
+        self.conv3 = nn.Sequential(nn.Conv2d(32, 16, 3, 1, 1),
+                                   nn.ReLU(inplace=True))
+
+        self.conv4 = nn.Sequential(nn.Conv2d(48, 16, 3, 1, 1),
+                                   nn.ReLU(inplace=True))
+
+        self.conv5 = nn.Sequential(nn.Conv2d(64, 16, 3, 1, 1),
+                                   nn.ReLU(inplace=True))
+
+        self.conv6 = nn.Sequential(nn.Conv2d(80, 16, 3, 1, 1),
+                                   nn.ReLU(inplace=True))
+
+        self.conv7 = nn.Sequential(nn.Conv2d(96, 16, 3, 1, 1),
+                                   nn.ReLU(inplace=True))
+
+        self.conv8 = nn.Sequential(nn.Conv2d(112, 16, 3, 1, 1),
+                                   nn.ReLU(inplace=True))
+
 
     def forward(self,x):
+        x = self.conv0(x) # Nx128x64x64
+        conv1_out = self.conv1(x) # Nx16x64x64
 
-        for i in range(8):
-            self.features[i] = self.layers[i](x)
-            x = torch.cat(seq=self.features[:i], dim=0)
+        conv2_out = self.conv2(conv1_out) # Nx16x64x64
 
-            print x.size()
+        conv3_in = torch.cat(([conv1_out, conv2_out]), 1) #Nx32x64x64
+        conv3_out = self.conv3(conv3_in)
+
+        conv4_in = torch.cat(([conv1_out, conv2_out, conv3_out]), 1) #Nx48x64x64
+        conv4_out = self.conv4(conv4_in)
+
+        conv5_in = torch.cat(([conv1_out, conv2_out, conv3_out, conv4_out]), 1)#Nx64x64x64
+        conv5_out = self.conv2(conv5_in)
+
+        conv6_in = torch.cat(([conv1_out, conv2_out, conv3_out, conv4_out, conv5_out]), 1) #Nx80x64x64
+        conv6_out = self.conv6(conv6_in)
+
+        conv7_in = torch.cat(([conv1_out, conv2_out, conv3_out, conv4_out, conv5_out, conv6_out]), 1) #Nx96x64x64
+        conv7_out = self.conv7(conv7_in)
+
+
+
+        conv8_in = torch.cat(([conv1_out, conv2_out, conv3_out, conv4_out, conv5_out, conv6_out, conv7_out]), 1) #Nx96x64x64
+        conv8_out = self.conv8(conv8_in)
+
+        output = torch.cat(([conv1_out, conv2_out, conv3_out, conv4_out,
+                            conv5_out, conv6_out, conv7_out, conv8_out]), 1)
+
+        print output.size()
+
+        return output
+
+
+
 
 
 
