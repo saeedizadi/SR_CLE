@@ -55,6 +55,7 @@ def train(model, trData, optimizer, lossfn, batch_size, lowres_dim, cuda=True):
     model.train()
     #downsample = transforms.Compose([transforms.ToPILImage(), transforms.Resize(lowres_dim), transforms.ToTensor()])
     for step, (high, low) in enumerate(trData):
+
         # mat1 = np.transpose(high[0].numpy(), (1, 2, 0))
         # mat2 = np.transpose(low[0].numpy(), (1, 2, 0))
         # final_frame = cv2.hconcat((mat1, mat2))
@@ -183,8 +184,8 @@ def main(args):
     # --- load data ---
 
     # --- define the model and NN settings ---
-    model = SRResNet(16, 1)
-    #model = DenseNetBlock()
+    # model = SRResNet(16, 1)
+    model = DenseNetBlock()
     criterion = nn.MSELoss()
 
     if args.cuda:
@@ -208,10 +209,10 @@ def main(args):
             scheduler.step()
 
             train_loss, train_psnr = train(model=model, trData=trLoader, optimizer=optimizer, lossfn=criterion,
-                               batch_size=args.batch_size, lowres_dim=args.patch_size / args.downscale_ratio)
+                               batch_size=args.batch_size, lowres_dim=args.patch_size / args.downscale_ratio,cuda=args.cuda)
 
             val_loss = validate(model=model, vlData=valLoader, lossfn=criterion,
-                                batch_size=args.batch_size, lowres_dim=args.patch_size / args.downscale_ratio)
+                                batch_size=args.batch_size, lowres_dim=args.patch_size / args.downscale_ratio, cuda=args.cuda)
 
             if epoch % args.log_step == 0:
 
@@ -246,7 +247,7 @@ def main(args):
     
         model.load_state_dict(checkpoint['state_dict'])
     
-        psnr = test(model, testLoader, args.savedir, lowres_dim=args.image_size / args.downscale_ratio)
+        psnr = test(model, testLoader, args.savedir, lowres_dim=args.image_size / args.downscale_ratio, cuda=args.cuda)
         print('[PSNR: {0:.4f}]'.format(float(psnr[0])))
     
     elif args.mode == "show":
@@ -256,3 +257,4 @@ def main(args):
 if __name__ == '__main__':
     args = get_arguments()
     main(args)
+

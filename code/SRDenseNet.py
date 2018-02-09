@@ -49,6 +49,7 @@ class DenseNetBlock(nn.Module):
 
 
     def forward(self,x):
+
         x = self.conv0(x) # Nx128x64x64
         conv1_out = self.conv1(x) # Nx16x64x64
 

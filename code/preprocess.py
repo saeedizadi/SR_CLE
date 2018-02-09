@@ -31,7 +31,7 @@ def crop(im, height, width):
 def partiton_images_blockwise(args):
 
     imgdir = os.path.join(args.indir, 'train')
-    filenames = glob.glob(os.path.join(imgdir, "*.jpg"))
+    filenames = glob.glob(os.path.join(imgdir, "*" + args.ext))
     for ind, currfile in enumerate(filenames):
 
         im = Image.open(currfile).convert('RGB')
