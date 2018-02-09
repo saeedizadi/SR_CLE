@@ -6,7 +6,7 @@ from torch.utils.data import Dataset
 
 
 class SRDataset(Dataset):
-    def __init__(self, highres_root, lowres_root, ext='jpg', transform=None):
+    def __init__(self, highres_root, lowres_root, ext='bmp', transform=None):
         super(SRDataset, self).__init__()
 
         self.highres_root = highres_root
