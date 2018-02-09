@@ -32,12 +32,12 @@ default_train.SAVE_DIR= '../checkpoints'
 default_test = argparse.Namespace()
 default_test.BATCH_SIZE = 5
 default_test.PATCH_SIZE  = 64
-default_test.IMAGE_SIZE  = 256
-default_test.DOWNSCALE_RATIO= 4
+default_test.IMAGE_SIZE  = 1024
+default_test.DOWNSCALE_RATIO= 2
 default_test.SR_TEST_DIR = '/local-scratch/saeedI/CLE/data/highres/val'
 default_test.LR_TEST_DIR = '/local-scratch/saeedI/CLE/data/lowres/val'
 default_test.NUM_WORKER = 2
-default_test.STATE= 20
+default_test.STATE= 220
 default_test.SAVE_DIR= '../results'
 default_test.WEIGHT_DIR= '../checkpoints'
 

@@ -17,8 +17,7 @@ import co_transforms as co_transforms
 from conf import get_arguments
 from dataset import SRDataset
 from evaluation import PSNR
-from evaluation import SSIM
-from SRResNet import SRResNet
+from generator import SRResNet
 from visualize import Dashboard
 
 
@@ -49,10 +48,8 @@ def prepare_data(sr_dir, lr_dir, patch_size, batch_size, mode='train', shuffle=T
 def train(model, trData, optimizer, lossfn, batch_size, lowres_dim, cuda=True):
     train_loss = 0.
     psnr_sum = 0.
-    ssim_sum = 0.
 
     psnr = PSNR()
-    ssim = SSIM()
 
     model.train()
     #downsample = transforms.Compose([transforms.ToPILImage(), transforms.Resize(lowres_dim), transforms.ToTensor()])
@@ -84,10 +81,8 @@ def train(model, trData, optimizer, lossfn, batch_size, lowres_dim, cuda=True):
 
         train_loss += loss.data.cpu().numpy()
         psnr_sum += psnr(high.data.cpu().numpy(), output.data.cpu().numpy())
-        ssim_sum += ssim(high.data.cpu().numpy(), output.data.cpu().numpy())
 
-    return float(train_loss) / len(trData.dataset), float(psnr_sum) / len(trData.dataset), \
-           float(ssim_sum) / len(trData.dataset)
+    return float(train_loss) / len(trData.dataset), float(psnr_sum) / len(trData.dataset)
 
 
 def validate(model, vlData, lossfn, batch_size, lowres_dim, cuda=True):
@@ -210,7 +205,7 @@ def main(args):
         for epoch in range(1, args.num_epochs + 1):
             scheduler.step()
 
-            train_loss, train_psnr, train_ssim = train(model=model, trData=trLoader, optimizer=optimizer, lossfn=criterion,
+            train_loss, train_psnr = train(model=model, trData=trLoader, optimizer=optimizer, lossfn=criterion,
                                batch_size=args.batch_size, lowres_dim=args.patch_size / args.downscale_ratio)
 
             val_loss = validate(model=model, vlData=valLoader, lossfn=criterion,
@@ -225,8 +220,7 @@ def main(args):
                 print('[Epoch: {0:02}/{1:02}]'
                       '\t[TrainLoss:{2:.4f}]'
                       '\t[TrainPSNR:{3:.4f}]'
-                      '\t[TrainSSIM:{4:.4f}]'
-                      '\t[ValLoss:{5:.4f}]').format(epoch, args.num_epochs, train_loss, train_psnr, train_ssim, val_loss),
+                      '\t[ValLoss:{4:.4f}]').format(epoch, args.num_epochs, train_loss, train_psnr, val_loss),
                 print('\t [Snapshot]')
 
                 if val_loss < best_loss:
@@ -238,9 +232,7 @@ def main(args):
             print('[Epoch: {0:02}/{1:02}]'
                   '\t[TrainLoss:{2:.4f}]'
                   '\t[TrainPSNR:{3:.4f}]'
-                  '\t[TrainSSIM:{4:.4f}]'
-                  '\t[ValLoss:{5:.4f}]').format(epoch, args.num_epochs, train_loss, train_psnr, train_ssim, val_loss),
-            print('\t [Snapshot]')
+                  '\t[ValLoss:{4:.4f}]').format(epoch, args.num_epochs, train_loss, train_psnr, val_loss)
 
     elif args.mode == 'test':
 

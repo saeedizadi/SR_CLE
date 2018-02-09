@@ -37,8 +37,8 @@ def partiton_images_blockwise(args):
         im = Image.open(currfile).convert('RGB')
         imgwidth, imgheight = im.size
 
-        height = imgheight / args.sub_ratio
-        width = imgwidth / args.sub_ratio
+        height = imgheight / args.part_ratio
+        width = imgwidth / args.part_ratio
 
         start_num = 0
         for k, piece in enumerate(crop(im, height, width), start_num):
@@ -87,7 +87,7 @@ if __name__ == '__main__':
     parser.add_argument('--indir', type=str, default='../data')
     parser.add_argument('--ext', type=str, default='.bmp')
     parser.add_argument('--magnif', type=int, default=4)
-    parser.add_argument('--sub-ratio', type=int, default=2)
+    parser.add_argument('--part-ratio', type=int, default=2)
     parser.add_argument('--downscale', action='store_true')
     parser.add_argument('--split', action='store_true')
 
