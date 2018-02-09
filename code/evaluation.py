@@ -13,8 +13,6 @@ You should have received a copy of the GNU General Public License
 along with this program.  If not, see <http://www.gnu.org/licenses/>.
 """
 
-from skimage.measure import compare_psnr as psnr
-from skimage.measure import compare_ssim as ssim
 import numpy as np
 import math
 

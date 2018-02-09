@@ -19,6 +19,7 @@ from dataset import SRDataset
 from evaluation import PSNR
 from generator import SRResNet
 from visualize import Dashboard
+from SRDenseNet import DenseNetBlock
 
 
 def prepare_data(sr_dir, lr_dir, patch_size, batch_size, mode='train', shuffle=True):
@@ -182,7 +183,8 @@ def main(args):
     # --- load data ---
 
     # --- define the model and NN settings ---
-    model = SRResNet(16, 1)
+    # model = SRResNet(16, 1)
+    model = DenseNetBlock()
     criterion = nn.MSELoss()
 
     if args.cuda:
@@ -234,21 +236,21 @@ def main(args):
                   '\t[TrainPSNR:{3:.4f}]'
                   '\t[ValLoss:{4:.4f}]').format(epoch, args.num_epochs, train_loss, train_psnr, val_loss)
 
-    elif args.mode == 'test':
-
-        testLoader = prepare_data(sr_dir=args.srtestdir, lr_dir=args.lrtestdir, patch_size='',
-                                  batch_size=args.batch_size, mode='test', shuffle=False)
-
-        filename = 'checkpoint_{0:02}.pth.tar'.format(args.state)
-        checkpoint = torch.load(os.path.join(args.weightdir, filename))
-
-        model.load_state_dict(checkpoint['state_dict'])
-
-        psnr = test(model, testLoader, args.savedir, lowres_dim=args.image_size / args.downscale_ratio)
-        print('[PSNR: {0:.4f}]'.format(float(psnr[0])))
-
-    elif args.mode == "show":
-        show_results(args.hrdir, args.lrdir, args.resdir, port=args.visdom_port)
+    # elif args.mode == 'test':
+    #
+    #     testLoader = prepare_data(sr_dir=args.srtestdir, lr_dir=args.lrtestdir, patch_size='',
+    #                               batch_size=args.batch_size, mode='test', shuffle=False)
+    #
+    #     filename = 'checkpoint_{0:02}.pth.tar'.format(args.state)
+    #     checkpoint = torch.load(os.path.join(args.weightdir, filename))
+    #
+    #     model.load_state_dict(checkpoint['state_dict'])
+    #
+    #     psnr = test(model, testLoader, args.savedir, lowres_dim=args.image_size / args.downscale_ratio)
+    #     print('[PSNR: {0:.4f}]'.format(float(psnr[0])))
+    #
+    # elif args.mode == "show":
+    #     show_results(args.hrdir, args.lrdir, args.resdir, port=args.visdom_port)
 
 
 if __name__ == '__main__':
