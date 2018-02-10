@@ -1,6 +1,6 @@
 import torch
 import torch.nn as nn
-
+from utils import initialize_weights
 
 class DenseNetConv(nn.Module):
     def __init__(self, in_channels, out_channels, ks=3, padding=1,stride=1):
@@ -20,8 +20,8 @@ class DenseNetBlock(nn.Module):
 
         self.features = []
 
-        self.conv0 = nn.Sequential(nn.Conv2d(1, 128, 3, 1, 1),
-                                   nn.ReLU(inplace=True))
+        #self.conv0 = nn.Sequential(nn.Conv2d(1, 128, 3, 1, 1),
+        #                           nn.ReLU(inplace=True))
 
         self.conv1 = nn.Sequential(nn.Conv2d(128,16,3,1,1),
                                    nn.ReLU(inplace=True))
@@ -50,7 +50,7 @@ class DenseNetBlock(nn.Module):
 
     def forward(self,x):
 
-        x = self.conv0(x) # Nx128x64x64
+        #x = self.conv0(x) # Nx128x64x64
         conv1_out = self.conv1(x) # Nx16x64x64
 
         conv2_out = self.conv2(conv1_out) # Nx16x64x64
@@ -62,7 +62,7 @@ class DenseNetBlock(nn.Module):
         conv4_out = self.conv4(conv4_in)
 
         conv5_in = torch.cat(([conv1_out, conv2_out, conv3_out, conv4_out]), 1)#Nx64x64x64
-        conv5_out = self.conv2(conv5_in)
+        conv5_out = self.conv5(conv5_in)
 
         conv6_in = torch.cat(([conv1_out, conv2_out, conv3_out, conv4_out, conv5_out]), 1) #Nx80x64x64
         conv6_out = self.conv6(conv6_in)
@@ -70,17 +70,72 @@ class DenseNetBlock(nn.Module):
         conv7_in = torch.cat(([conv1_out, conv2_out, conv3_out, conv4_out, conv5_out, conv6_out]), 1) #Nx96x64x64
         conv7_out = self.conv7(conv7_in)
 
-
-
         conv8_in = torch.cat(([conv1_out, conv2_out, conv3_out, conv4_out, conv5_out, conv6_out, conv7_out]), 1) #Nx96x64x64
         conv8_out = self.conv8(conv8_in)
 
         output = torch.cat(([conv1_out, conv2_out, conv3_out, conv4_out,
                             conv5_out, conv6_out, conv7_out, conv8_out]), 1)
 
-        print output.size()
-
         return output
+
+
+class SRDenseNet(nn.Module):
+    def __init__(self, num_denseblks):
+        super(SRDenseNet, self).__init__()
+
+
+        self.num_denseblks = num_denseblks
+
+        self.conv1 = nn.Sequential(nn.Conv2d(1, 64, kernel_size=3, stride=1, padding=1),
+                                     nn.ReLU(inplace=True))
+
+        self.conv2 = nn.Sequential(nn.Conv2d(64, 128, kernel_size=3, stride=1, padding=1),
+                                   nn.ReLU(inplace=True))
+
+
+        self.denseblks = nn.ModuleList([DenseNetBlock() for i in range(num_denseblks)])
+
+
+        self.bottleneck = nn.Conv2d(256, 128, kernel_size=1, stride=1)
+
+        self.deconv1 = nn.Sequential(nn.ConvTranspose2d(256, 256, kernel_size=2, stride=2),
+                                     nn.ReLU(inplace=True))
+        self.deconv2 = nn.Sequential(nn.ConvTranspose2d(256, 256, kernel_size=2, stride=2),
+                                     nn.ReLU(inplace=True))
+
+        self.reconst_conv = nn.Conv2d(256, 1, kernel_size=3, stride=1, padding=1)
+
+        initialize_weights(self, 'kaiming')
+
+
+    def forward(self, x):
+
+        x = self.conv1(x)
+        x = self.conv2(x)
+        low_feats = x.clone()
+
+
+
+        for i in range(self.num_denseblks):
+            x = self.denseblks[i](x)
+
+        deconv1_in = torch.cat(([low_feats, x]), dim=1)
+
+
+        x = self.deconv1(deconv1_in)
+        x = self.deconv2(x)
+
+        out = self.reconst_conv(x)
+
+        return out
+
+
+
+
+
+
+
+
 
 
 

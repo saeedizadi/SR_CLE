@@ -19,7 +19,7 @@ from dataset import SRDataset
 from evaluation import PSNR
 from generator import SRResNet
 from visualize import Dashboard
-from SRDenseNet import DenseNetBlock
+from SRDenseNet import SRDenseNet
 
 
 def prepare_data(sr_dir, lr_dir, patch_size, batch_size, mode='train', shuffle=True):
@@ -53,8 +53,8 @@ def train(model, trData, optimizer, lossfn, batch_size, lowres_dim, cuda=True):
     psnr = PSNR()
 
     model.train()
-    #downsample = transforms.Compose([transforms.ToPILImage(), transforms.Resize(lowres_dim), transforms.ToTensor()])
-    for step, (high, low) in enumerate(trData):
+    downsample = transforms.Compose([transforms.ToPILImage(), transforms.Resize(lowres_dim), transforms.ToTensor()])
+    for step, (high, _) in enumerate(trData):
 
         # mat1 = np.transpose(high[0].numpy(), (1, 2, 0))
         # mat2 = np.transpose(low[0].numpy(), (1, 2, 0))
@@ -63,9 +63,9 @@ def train(model, trData, optimizer, lossfn, batch_size, lowres_dim, cuda=True):
         # cv2.waitKey(0)
 
         # -- Removes online downsampling ---
-        # low = torch.FloatTensor(high.size()[0], 3, lowres_dim, lowres_dim)
-        # for j in range(high.size()[0]):
-        #     low[j] = downsample(high[j])
+        low = torch.FloatTensor(high.size()[0], 1, lowres_dim, lowres_dim)
+        for j in range(high.size()[0]):
+            low[j] = downsample(high[j])
 
         if cuda:
             low = low.cuda()
@@ -91,12 +91,12 @@ def validate(model, vlData, lossfn, batch_size, lowres_dim, cuda=True):
     val_loss = 0.
     model.eval()
     # downsample = transforms.Compose([transforms.ToPILImage(), transforms.Resize(lowres_dim), transforms.ToTensor()])
-    for step, (high, low) in enumerate(vlData):
+    for step, (high, _) in enumerate(vlData):
 
         # --- removes online downsampling
-        # low = torch.FloatTensor(high.size()[0], 3, lowres_dim, lowres_dim)
-        # for j in range(high.size()[0]):
-        #     low[j] = downsample(high[j])
+        low = torch.FloatTensor(high.size()[0], 1, lowres_dim, lowres_dim)
+        for j in range(high.size()[0]):
+            low[j] = downsample(high[j])
 
         if cuda:
             low = low.cuda()
@@ -185,7 +185,7 @@ def main(args):
 
     # --- define the model and NN settings ---
     # model = SRResNet(16, 1)
-    model = DenseNetBlock()
+    model = SRDenseNet(8)
     criterion = nn.MSELoss()
 
     if args.cuda:
