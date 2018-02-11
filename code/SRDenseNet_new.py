@@ -16,7 +16,7 @@ class DenseNetConv(nn.Module):
 
 
 class DenseNetBlock(nn.Module):
-    def __init__(self, ks=3, padding=1, stride=1):
+    def __init__(self, in_channels=128 ,ks=3, padding=1, stride=1):
         super(DenseNetBlock, self).__init__()
 
         self.features = []
@@ -24,7 +24,7 @@ class DenseNetBlock(nn.Module):
         #self.conv0 = nn.Sequential(nn.Conv2d(1, 128, 3, 1, 1),
         #                           nn.ReLU(inplace=True))
 
-        self.conv1 = nn.Sequential(nn.Conv2d(128,16,3,1,1),
+        self.conv1 = nn.Sequential(nn.Conv2d(in_channels=in_channels,out_channels=16,kernel_size=3,stride=1,padding=1),
                                    nn.ReLU(inplace=True))
 
         self.conv2 = nn.Sequential(nn.Conv2d(16, 16, 3, 1, 1),
@@ -94,7 +94,9 @@ class SRDenseNet(nn.Module):
                                    nn.ReLU(inplace=True))
 
 
-        self.denseblks = nn.ModuleList([DenseNetBlock() for i in range(num_denseblks)])
+
+        self.growth_rate=128
+        self.denseblks = nn.ModuleList([DenseNetBlock(self.growth_rate*(i+1)) for i in range(num_denseblks)])
 
 
         self.bottleneck = nn.Conv2d(256, 128, kernel_size=1, stride=1)
@@ -115,9 +117,9 @@ class SRDenseNet(nn.Module):
         x = self.conv2(x)
         low_feats = x.clone()
 
-
-
+        features = []
         for i in range(self.num_denseblks):
+            features.append(self.denseblks[i](x))
             x = self.denseblks[i](x)
 
         deconv1_in = torch.cat(([low_feats, x]), dim=1)

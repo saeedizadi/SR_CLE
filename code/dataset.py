@@ -15,7 +15,6 @@ class SRDataset(Dataset):
         self.transform = transform
 
         self.filenames = [k.split('/')[-1].split('.')[0] for k in glob(os.path.join(self.highres_root, '*.' + ext))]
-        print len(self.filenames)
 
     def __getitem__(self, index):
         SRfilename = os.path.join(self.highres_root, self.filenames[index] + '.' + self.ext)

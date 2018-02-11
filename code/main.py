@@ -26,13 +26,13 @@ def prepare_data(sr_dir, lr_dir, patch_size, batch_size, mode='train', shuffle=T
     if mode is 'val':
         transform = co_transforms.Compose(
             [co_transforms.Grayscale(),
-             co_transforms.RandomCrop(patch_size, patch_size),
+             #co_transforms.RandomCrop(patch_size, patch_size),
              co_transforms.ToTensor()])
 
     elif mode is 'train':
         transform = co_transforms.Compose(
             [co_transforms.Grayscale(),
-             co_transforms.RandomCrop(patch_size, patch_size),
+             #co_transforms.RandomCrop(patch_size, patch_size),
              co_transforms.RandomHorizontalFlip(),
              co_transforms.RandomVerticalFlip(),
              co_transforms.ToTensor()])
@@ -90,7 +90,7 @@ def train(model, trData, optimizer, lossfn, batch_size, lowres_dim, cuda=True):
 def validate(model, vlData, lossfn, batch_size, lowres_dim, cuda=True):
     val_loss = 0.
     model.eval()
-    # downsample = transforms.Compose([transforms.ToPILImage(), transforms.Resize(lowres_dim), transforms.ToTensor()])
+    downsample = transforms.Compose([transforms.ToPILImage(), transforms.Resize(lowres_dim), transforms.ToTensor()])
     for step, (high, _) in enumerate(vlData):
 
         # --- removes online downsampling
@@ -119,15 +119,17 @@ def test(model, testData, savedir, lowres_dim, cuda=True):
     ssim_sum = 0.
 
     model.eval()
-    # downsample = transforms.Compose([transforms.ToPILImage(), transforms.Resize(lowres_dim), transforms.ToTensor()])
+    downsample = transforms.Compose([transforms.ToPILImage(), transforms.Resize(lowres_dim), transforms.ToTensor()])
     toImage = transforms.ToPILImage()
     batch_size = 5
-    for step, (high, low) in enumerate(testData):
+    for step, (high, _) in enumerate(testData):
+        if step > 10:
+            break
 
         # --- removes online downsampling ---
-        # low = torch.FloatTensor(high.size()[0], 3, lowres_dim, lowres_dim)
-        # for j in range(high.size()[0]):
-        #     low[j] = downsample(high[j])
+        low = torch.FloatTensor(high.size()[0], 1, lowres_dim, lowres_dim)
+        for j in range(high.size()[0]):
+            low[j] = downsample(high[j])
 
         if cuda:
             low = low.cuda()
@@ -156,20 +158,20 @@ def save_snapshot(state, filename='checkpoint.pth.tar', savedir='./checkpoints')
 
 def show_results(highdir, lowdir, resdir, port=8097):
     dashboard = Dashboard(port=port)
-    filenames = [k.split('/')[-1].split('.')[0] for k in glob.glob(os.path.join(highdir, '*.jpg'))]
+    filenames = [k.split('/')[-1].split('.')[0] for k in glob.glob(os.path.join(highdir, '*.bmp'))]
     shuffle(filenames)
 
 
 
     batch = np.empty((0, 3, 1024, 1024))
 
-    for i in range(20):
+    for i in range(5):
         currfile = filenames[i]
-        im = np.array(Image.open(os.path.join(highdir, currfile + ".jpg")).convert('RGB'))
+        im = np.array(Image.open(os.path.join(highdir, currfile + ".bmp")).convert('RGB'))
         im = im.transpose((2, 0, 1))
         batch = np.append(batch, im[np.newaxis, :, :, :], axis=0)
 
-        im = np.array(Image.open(os.path.join(lowdir, currfile + ".jpg")).convert('RGB'))
+        im = np.array(Image.open(os.path.join(lowdir, currfile + ".bmp")).convert('RGB'))
         im = im.transpose((2, 0, 1))
         batch = np.append(batch, im[np.newaxis, :, :, :], axis=0)
 
@@ -211,8 +213,10 @@ def main(args):
             train_loss, train_psnr = train(model=model, trData=trLoader, optimizer=optimizer, lossfn=criterion,
                                batch_size=args.batch_size, lowres_dim=args.patch_size / args.downscale_ratio,cuda=args.cuda)
 
-            val_loss = validate(model=model, vlData=valLoader, lossfn=criterion,
-                                batch_size=args.batch_size, lowres_dim=args.patch_size / args.downscale_ratio, cuda=args.cuda)
+            #val_loss = validate(model=model, vlData=valLoader, lossfn=criterion,
+            #                   batch_size=args.batch_size, lowres_dim=args.patch_size / args.downscale_ratio, cuda=args.cuda)
+
+            val_loss = 0.0
 
             if epoch % args.log_step == 0:
 

@@ -87,7 +87,7 @@ if __name__ == '__main__':
     parser.add_argument('--indir', type=str, default='../data')
     parser.add_argument('--ext', type=str, default='.bmp')
     parser.add_argument('--magnif', type=int, default=4)
-    parser.add_argument('--part-ratio', type=int, default=2)
+    parser.add_argument('--part-ratio', type=int, default=8)
     parser.add_argument('--downscale', action='store_true')
     parser.add_argument('--split', action='store_true')
 
