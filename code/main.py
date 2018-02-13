@@ -123,8 +123,6 @@ def test(model, testData, savedir, lowres_dim, cuda=True):
     toImage = transforms.ToPILImage()
     batch_size = 5
     for step, (high, _) in enumerate(testData):
-        if step > 10:
-            break
 
         # --- removes online downsampling ---
         low = torch.FloatTensor(high.size()[0], 1, lowres_dim, lowres_dim)
@@ -162,7 +160,6 @@ def show_results(highdir, lowdir, resdir, port=8097):
     shuffle(filenames)
 
 
-
     batch = np.empty((0, 3, 1024, 1024))
 
     for i in range(5):
@@ -183,9 +180,8 @@ def show_results(highdir, lowdir, resdir, port=8097):
 
 
 def main(args):
-    # --- load data ---
 
-    # --- define the model and NN settings ---
+
     # model = SRResNet(16, 1)
     model = SRDenseNet(8)
     criterion = nn.MSELoss()
@@ -198,12 +194,11 @@ def main(args):
     if args.mode == "train":
         trLoader = prepare_data(sr_dir=args.srtraindir, lr_dir=args.lrtraindir, patch_size=args.patch_size,
                                 batch_size=args.batch_size, mode='train')
-        valLoader = prepare_data(sr_dir=args.srvaldir, lr_dir=args.lrvaldir, patch_size=args.patch_size,
-                                 batch_size=args.batch_size, mode='val')
+        #valLoader = prepare_data(sr_dir=args.srvaldir, lr_dir=args.lrvaldir, patch_size=args.patch_size,
+        #                         batch_size=args.batch_size/4, mode='val')
 
         optimizer = optim.SGD(model.parameters(), lr=args.learning_rate, momentum=args.momentum,
                               weight_decay=args.weight_decay)
-        # optimizer = optim.Adam(model.parameters(), lr=args.learning_rate, betas=(0.9,0.999), eps=1e-08)
         scheduler = lr_scheduler.MultiStepLR(optimizer, milestones=[50, 100], gamma=0.1)
 
         best_loss = float('inf')
@@ -213,9 +208,10 @@ def main(args):
             train_loss, train_psnr = train(model=model, trData=trLoader, optimizer=optimizer, lossfn=criterion,
                                batch_size=args.batch_size, lowres_dim=args.patch_size / args.downscale_ratio,cuda=args.cuda)
 
-            #val_loss = validate(model=model, vlData=valLoader, lossfn=criterion,
-            #                   batch_size=args.batch_size, lowres_dim=args.patch_size / args.downscale_ratio, cuda=args.cuda)
 
+            # --- commented since due to error ---
+            #val_loss = validate(model=model, vlData=valLoader, lossfn=criterion,
+            #                   batch_size=args.batch_size, lowres_dim=args.image_size / args.downscale_ratio, cuda=args.cuda)
             val_loss = 0.0
 
             if epoch % args.log_step == 0:
@@ -242,18 +238,18 @@ def main(args):
                   '\t[ValLoss:{4:.4f}]').format(epoch, args.num_epochs, train_loss, train_psnr, val_loss)
 
     elif args.mode == 'test':
-    
+
         testLoader = prepare_data(sr_dir=args.srtestdir, lr_dir=args.lrtestdir, patch_size='',
                                   batch_size=args.batch_size, mode='test', shuffle=False)
-    
+
         filename = 'checkpoint_{0:02}.pth.tar'.format(args.state)
         checkpoint = torch.load(os.path.join(args.weightdir, filename))
-    
+
         model.load_state_dict(checkpoint['state_dict'])
-    
+
         psnr = test(model, testLoader, args.savedir, lowres_dim=args.image_size / args.downscale_ratio, cuda=args.cuda)
         print('[PSNR: {0:.4f}]'.format(float(psnr[0])))
-    
+
     elif args.mode == "show":
         show_results(args.hrdir, args.lrdir, args.resdir, port=args.visdom_port)
 
