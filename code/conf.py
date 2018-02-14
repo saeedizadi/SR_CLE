@@ -1,5 +1,5 @@
 import argparse
-
+from copy import deepcopy
 
 
 ### note: argparse Namespace works like a dictiornary. You can treat as a dictionary -> define some arguments (keys) and assign the default values ###
@@ -13,37 +13,41 @@ defaults.CUDA = False
 
 # --- define the namespace for defaults for train mode
 default_train = argparse.Namespace()
-default_train.BATCH_SIZE = 32
+default_train.BATCH_SIZE = 64
 default_train.LEARNING_RATE = 0.01
 default_train.EPOCHS = 300
 default_train.MOMENTUM = 0.9
 default_train.WEIGHT_DECAY = 0.0001
 default_train.PATCH_SIZE  = 128
-default_train.IMAGE_SIZE  = 128
+default_train.IMAGE_SIZE  = 1024
 default_train.DOWNSCALE_RATIO = 4
-default_train.SR_TRAIN_DIR = '/local-scratch/saeedI/CLE/data/highres/train'
-default_train.LR_TRAIN_DIR = '/local-scratch/saeedI/CLE/data/lowres/train'
-default_train.SR_VAL_DIR = '/local-scratch/saeedI/CLE/data/highres/val'
-default_train.LR_VAL_DIR = '/local-scratch/saeedI/CLE/data/lowres/val'
+default_train.SR_TRAIN_DIR = '/local-scratch/saeedI/SR_CLE/data/highres/train'
+default_train.LR_TRAIN_DIR = '/local-scratch/saeedI/SR_CLE/data/lowres/train'
+default_train.SR_VAL_DIR = '/local-scratch/saeedI/SR_CLE/data/highres/val'
+default_train.LR_VAL_DIR = '/local-scratch/saeedI/SR_CLE/data/lowres/val'
 default_train.NUM_WORKER = 2
 default_train.LOG_STEP= 20
+default_train.STATE= 20 # for resume
 default_train.SAVE_DIR= '../checkpoints'
 
+
+
+
 default_test = argparse.Namespace()
-default_test.BATCH_SIZE = 5
+default_test.BATCH_SIZE = 3
 default_test.PATCH_SIZE  = 64
 default_test.IMAGE_SIZE  = 1024
 default_test.DOWNSCALE_RATIO= 4
-default_test.SR_TEST_DIR = '/local-scratch/saeedI/CLE/data/highres/val'
-default_test.LR_TEST_DIR = '/local-scratch/saeedI/CLE/data/lowres/val'
+default_test.SR_TEST_DIR = '/local-scratch/saeedI/SR_CLE/data/highres/val'
+default_test.LR_TEST_DIR = '/local-scratch/saeedI/SR_CLE/data/lowres/val'
 default_test.NUM_WORKER = 2
 default_test.STATE= 20
 default_test.SAVE_DIR= '../results'
 default_test.WEIGHT_DIR= '../checkpoints'
 
 default_show = argparse.Namespace()
-default_show.HIGHRES= '/local-scratch/saeedI/CLE/data/highres/val'
-default_show.LOWRES= '/local-scratch/saeedI/CLE/data/lowres/val'
+default_show.HIGHRES= '/local-scratch/saeedI/SR_CLE/data/highres/val'
+default_show.LOWRES= '/local-scratch/saeedI/SR_CLE/data/lowres/val'
 default_show.RESULTS= '../results'
 
 
@@ -77,6 +81,8 @@ def get_arguments():
     parser_train.add_argument('--lrvaldir', type=str, default=default_train.LR_VAL_DIR)
     parser_train.add_argument('--savedir', type=str, default=default_train.SAVE_DIR)
     parser_train.add_argument('--log-step', type=int, default=default_train.LOG_STEP)
+    parser_train.add_argument('--resume', action='store_true')
+    parser_train.add_argument('--state', type=int, default=default_train.STATE)
 
     # --- define subparsers --> test
     parser_test = subparser.add_parser('test')

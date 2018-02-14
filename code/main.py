@@ -19,7 +19,7 @@ from dataset import SRDataset
 from evaluation import PSNR
 from generator import SRResNet
 from visualize import Dashboard
-from SRDenseNet import SRDenseNet
+from srdensenet import SRDenseNet_ALL
 
 
 def prepare_data(sr_dir, lr_dir, patch_size, batch_size, mode='train', shuffle=True):
@@ -53,7 +53,7 @@ def train(model, trData, optimizer, lossfn, batch_size, lowres_dim, cuda=True):
     psnr = PSNR()
 
     model.train()
-    downsample = transforms.Compose([transforms.ToPILImage(), transforms.Resize(lowres_dim), transforms.ToTensor()])
+    downsample = transforms.Compose([transforms.ToPILImage(), transforms.Resize(lowres_dim, Image.BICUBIC), transforms.ToTensor()])
     for step, (high, _) in enumerate(trData):
 
         # mat1 = np.transpose(high[0].numpy(), (1, 2, 0))
@@ -80,9 +80,8 @@ def train(model, trData, optimizer, lossfn, batch_size, lowres_dim, cuda=True):
         loss.backward()
         optimizer.step()
 
-
         train_loss += loss.data.cpu().numpy()
-        psnr_sum += psnr(high.data.cpu().numpy(), output.data.cpu().numpy())
+        psnr_sum += (low.size()[0]*psnr(high.data.cpu().numpy(), output.data.cpu().numpy()))
 
     return float(train_loss) / len(trData.dataset), float(psnr_sum) / len(trData.dataset)
 
@@ -90,7 +89,7 @@ def train(model, trData, optimizer, lossfn, batch_size, lowres_dim, cuda=True):
 def validate(model, vlData, lossfn, batch_size, lowres_dim, cuda=True):
     val_loss = 0.
     model.eval()
-    downsample = transforms.Compose([transforms.ToPILImage(), transforms.Resize(lowres_dim), transforms.ToTensor()])
+    downsample = transforms.Compose([transforms.ToPILImage(), transforms.Resize(lowres_dim,Image.BICUBIC), transforms.ToTensor()])
     for step, (high, _) in enumerate(vlData):
 
         # --- removes online downsampling
@@ -119,9 +118,9 @@ def test(model, testData, savedir, lowres_dim, cuda=True):
     ssim_sum = 0.
 
     model.eval()
-    downsample = transforms.Compose([transforms.ToPILImage(), transforms.Resize(lowres_dim), transforms.ToTensor()])
+    downsample = transforms.Compose([transforms.ToPILImage(), transforms.Resize(lowres_dim, Image.BICUBIC), transforms.ToTensor()])
     toImage = transforms.ToPILImage()
-    batch_size = 5
+    batch_size = 3
     for step, (high, _) in enumerate(testData):
 
         # --- removes online downsampling ---
@@ -183,7 +182,7 @@ def main(args):
 
 
     # model = SRResNet(16, 1)
-    model = SRDenseNet(8)
+    model = SRDenseNet_ALL(8)
     criterion = nn.MSELoss()
 
     if args.cuda:
@@ -201,8 +200,20 @@ def main(args):
                               weight_decay=args.weight_decay)
         scheduler = lr_scheduler.MultiStepLR(optimizer, milestones=[50, 100], gamma=0.1)
 
+
+
+        epoch_start = 1
+        if args.resume:
+            filename = 'checkpoint_{0:02}.pth.tar'.format(args.state)
+            checkpoint = torch.load(os.path.join(args.savedir, filename))
+
+            model.load_state_dict(checkpoint['state_dict'])
+            optimizer.load_state_dict(checkpoint['optimizer'])
+            epoch_start = checkpoint['epoch']
+
+
         best_loss = float('inf')
-        for epoch in range(1, args.num_epochs + 1):
+        for epoch in range(epoch_start, args.num_epochs + 1):
             scheduler.step()
 
             train_loss, train_psnr = train(model=model, trData=trLoader, optimizer=optimizer, lossfn=criterion,

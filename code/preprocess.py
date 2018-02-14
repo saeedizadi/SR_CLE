@@ -7,12 +7,13 @@ import cv2
 import numpy as np
 from PIL import Image
 from scipy import misc
-from skimage.measure import block_reduce
+#from skimage.measure import block_reducea
 from tqdm import tqdm
 
 
 def downsample(image, mag_ratio):
-    image_ds = block_reduce(image, block_size=(mag_ratio, mag_ratio, 1), func=np.mean)
+    #image_ds = block_reduce(image, block_size=(mag_ratio, mag_ratio, 1), func=np.mean)
+    image_ds = misc.imresize(image, 1./mag_ratio, interp='bicubic')
     return image_ds
 
 
@@ -63,7 +64,7 @@ def generate_lowres_dataset(args):
         filenames = [k.split('/')[-1].split('.')[0] for k in glob.glob(os.path.join(dirpath, '*' + args.ext))]
         for f in tqdm(filenames):
             im = np.array(Image.open(os.path.join(dirpath, f + args.ext)).convert('RGB'))
-            im = cv2.filter2D(im, -1, kernel)
+            #im = cv2.filter2D(im, -1, kernel)
             original_size = im.shape
             im_ds = downsample(im, args.magnif)
             im_us = upsample(im_ds, size=original_size)

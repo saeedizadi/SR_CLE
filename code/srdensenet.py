@@ -16,7 +16,7 @@ class DenseNetConv(nn.Module):
 
 
 class DenseNetBlock(nn.Module):
-    def __init__(self, ks=3, padding=1, stride=1):
+    def __init__(self, in_channels=128 ,ks=3, padding=1, stride=1):
         super(DenseNetBlock, self).__init__()
 
         self.features = []
@@ -24,7 +24,7 @@ class DenseNetBlock(nn.Module):
         #self.conv0 = nn.Sequential(nn.Conv2d(1, 128, 3, 1, 1),
         #                           nn.ReLU(inplace=True))
 
-        self.conv1 = nn.Sequential(nn.Conv2d(128,16,3,1,1),
+        self.conv1 = nn.Sequential(nn.Conv2d(in_channels=in_channels,out_channels=16,kernel_size=3,stride=1,padding=1),
                                    nn.ReLU(inplace=True))
 
         self.conv2 = nn.Sequential(nn.Conv2d(16, 16, 3, 1, 1),
@@ -80,6 +80,59 @@ class DenseNetBlock(nn.Module):
         return output
 
 
+class SRDenseNet_ALL(nn.Module):
+    def __init__(self, num_denseblks):
+        super(SRDenseNet_ALL, self).__init__()
+
+
+        self.num_denseblks = num_denseblks
+
+        self.conv1 = nn.Sequential(nn.Conv2d(1, 64, kernel_size=3, stride=1, padding=1),
+                                     nn.ReLU(inplace=True))
+
+        self.conv2 = nn.Sequential(nn.Conv2d(64, 128, kernel_size=3, stride=1, padding=1),
+                                   nn.ReLU(inplace=True))
+
+
+
+        self.growth_rate=128
+        self.denseblks = nn.ModuleList([DenseNetBlock(self.growth_rate*(i+1)) for i in range(num_denseblks)])
+
+
+        self.bottleneck = nn.Conv2d(1152, 256, kernel_size=1, stride=1)
+
+        self.deconv1 = nn.Sequential(nn.ConvTranspose2d(256, 256, kernel_size=2, stride=2),
+                                     nn.ReLU(inplace=True))
+        self.deconv2 = nn.Sequential(nn.ConvTranspose2d(256, 256, kernel_size=2, stride=2),
+                                     nn.ReLU(inplace=True))
+
+        self.reconst_conv = nn.Conv2d(256, 1, kernel_size=3, stride=1, padding=1)
+
+        initialize_weights(self, 'kaiming')
+
+
+    def forward(self, x):
+
+        x = self.conv1(x)
+        x = self.conv2(x)
+        low_feats = x.clone()
+
+        features = [low_feats]
+        for i in range(self.num_denseblks):
+            x = torch.cat((features[:]), dim=1)
+            features.append(self.denseblks[i](x))
+
+        x = torch.cat((features[:]), dim=1)
+
+        x = self.bottleneck(x)
+
+
+        x = self.deconv1(x)
+        x = self.deconv2(x)
+
+        out = self.reconst_conv(x)
+        return F.sigmoid(out)
+
 class SRDenseNet(nn.Module):
     def __init__(self, num_denseblks):
         super(SRDenseNet, self).__init__()
@@ -108,9 +161,7 @@ class SRDenseNet(nn.Module):
 
         initialize_weights(self, 'kaiming')
 
-
     def forward(self, x):
-
         x = self.conv1(x)
         x = self.conv2(x)
         low_feats = x.clone()
@@ -129,17 +180,5 @@ class SRDenseNet(nn.Module):
         out = self.reconst_conv(x)
 
         return F.sigmoid(out)
-
-
-
-
-
-
-
-
-
-
-
-
 
 
