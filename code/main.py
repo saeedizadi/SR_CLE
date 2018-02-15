@@ -156,12 +156,12 @@ def save_snapshot(state, filename='checkpoint.pth.tar', savedir='./checkpoints')
 def show_results(highdir, lowdir, resdir, port=8097):
     dashboard = Dashboard(port=port)
     filenames = [k.split('/')[-1].split('.')[0] for k in glob.glob(os.path.join(highdir, '*.bmp'))]
-    shuffle(filenames)
+    #shuffle(filenames)
 
 
     batch = np.empty((0, 3, 1024, 1024))
-
-    for i in range(5):
+    print len(filenames)
+    for i in range(15,20):
         currfile = filenames[i]
         im = np.array(Image.open(os.path.join(highdir, currfile + ".bmp")).convert('RGB'))
         im = im.transpose((2, 0, 1))

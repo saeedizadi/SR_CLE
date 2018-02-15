@@ -38,16 +38,16 @@ default_test.BATCH_SIZE = 3
 default_test.PATCH_SIZE  = 64
 default_test.IMAGE_SIZE  = 1024
 default_test.DOWNSCALE_RATIO= 4
-default_test.SR_TEST_DIR = '/local-scratch/saeedI/SR_CLE/data/highres/val'
-default_test.LR_TEST_DIR = '/local-scratch/saeedI/SR_CLE/data/lowres/val'
+default_test.SR_TEST_DIR = '/local-scratch/saeedI/SR_CLE/data/highres/test'
+default_test.LR_TEST_DIR = '/local-scratch/saeedI/SR_CLE/data/lowres/test'
 default_test.NUM_WORKER = 2
-default_test.STATE= 20
+default_test.STATE= 100
 default_test.SAVE_DIR= '../results'
 default_test.WEIGHT_DIR= '../checkpoints'
 
 default_show = argparse.Namespace()
-default_show.HIGHRES= '/local-scratch/saeedI/SR_CLE/data/highres/val'
-default_show.LOWRES= '/local-scratch/saeedI/SR_CLE/data/lowres/val'
+default_show.HIGHRES= '/local-scratch/saeedI/SR_CLE/data/highres/test'
+default_show.LOWRES= '/local-scratch/saeedI/SR_CLE/data/lowres/test'
 default_show.RESULTS= '../results'
 
 
