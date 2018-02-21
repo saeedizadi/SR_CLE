@@ -18,7 +18,7 @@ def downsample(image, mag_ratio):
 
 
 def upsample(image, size):
-    im_up = misc.imresize(image, size=size, interp='bicubic')
+    im_up = misc.imresize(image, size=size, interp='nearest')
     return im_up
 
 def crop(im, height, width):
@@ -67,6 +67,8 @@ def generate_lowres_dataset(args):
             #im = cv2.filter2D(im, -1, kernel)
             original_size = im.shape
             im_ds = downsample(im, args.magnif)
+
+            #im_us = im_ds
             im_us = upsample(im_ds, size=original_size)
             temp = Image.fromarray(im_us, mode='RGB')
             new_filename = f + args.ext
@@ -88,7 +90,7 @@ if __name__ == '__main__':
     parser.add_argument('--indir', type=str, default='../data')
     parser.add_argument('--ext', type=str, default='.bmp')
     parser.add_argument('--magnif', type=int, default=4)
-    parser.add_argument('--part-ratio', type=int, default=8)
+    parser.add_argument('--part-ratio', type=int, default=4)
     parser.add_argument('--downscale', action='store_true')
     parser.add_argument('--split', action='store_true')
 

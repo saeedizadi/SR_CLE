@@ -13,12 +13,12 @@ defaults.CUDA = False
 
 # --- define the namespace for defaults for train mode
 default_train = argparse.Namespace()
-default_train.BATCH_SIZE = 64
+default_train.BATCH_SIZE = 32
 default_train.LEARNING_RATE = 0.01
 default_train.EPOCHS = 300
 default_train.MOMENTUM = 0.9
-default_train.WEIGHT_DECAY = 0.0001
-default_train.PATCH_SIZE  = 128
+default_train.WEIGHT_DECAY = 0.00005
+default_train.PATCH_SIZE  = 256
 default_train.IMAGE_SIZE  = 1024
 default_train.DOWNSCALE_RATIO = 4
 default_train.SR_TRAIN_DIR = '/local-scratch/saeedI/SR_CLE/data/highres/train'
@@ -26,7 +26,7 @@ default_train.LR_TRAIN_DIR = '/local-scratch/saeedI/SR_CLE/data/lowres/train'
 default_train.SR_VAL_DIR = '/local-scratch/saeedI/SR_CLE/data/highres/val'
 default_train.LR_VAL_DIR = '/local-scratch/saeedI/SR_CLE/data/lowres/val'
 default_train.NUM_WORKER = 2
-default_train.LOG_STEP= 20
+default_train.LOG_STEP= 10
 default_train.STATE= 20 # for resume
 default_train.SAVE_DIR= '../checkpoints'
 
@@ -34,16 +34,22 @@ default_train.SAVE_DIR= '../checkpoints'
 
 
 default_test = argparse.Namespace()
-default_test.BATCH_SIZE = 3
-default_test.PATCH_SIZE  = 64
+default_test.BATCH_SIZE = 4
+default_test.PATCH_SIZE  = 256
 default_test.IMAGE_SIZE  = 1024
 default_test.DOWNSCALE_RATIO= 4
 default_test.SR_TEST_DIR = '/local-scratch/saeedI/SR_CLE/data/highres/test'
 default_test.LR_TEST_DIR = '/local-scratch/saeedI/SR_CLE/data/lowres/test'
 default_test.NUM_WORKER = 2
-default_test.STATE= 100
+default_test.STATE= 10
 default_test.SAVE_DIR= '../results'
 default_test.WEIGHT_DIR= '../checkpoints'
+
+
+default_evaluate = argparse.Namespace()
+default_evaluate.RESULTS= '../results'
+default_evaluate.METHODS= ['srdensenet', 'bicubic']
+
 
 default_show = argparse.Namespace()
 default_show.HIGHRES= '/local-scratch/saeedI/SR_CLE/data/highres/test'
@@ -95,6 +101,11 @@ def get_arguments():
     parser_test.add_argument('--savedir', type=str, default=default_test.SAVE_DIR)
     parser_test.add_argument('--weightdir', type=str, default=default_test.WEIGHT_DIR)
     parser_test.add_argument('--state', type=int, default=default_test.STATE)
+
+    parser_evaluate = subparser.add_parser('evaluate')
+    parser_evaluate.add_argument('--resdir', type=str, default=default_show.RESULTS)
+    parser_evaluate
+
 
     parser_show = subparser.add_parser('show')
     parser_show.add_argument('--hrdir', type=str, default=default_show.HIGHRES)

@@ -5,6 +5,7 @@ from random import shuffle
 
 import numpy as np
 import torch
+#torch.backends.cudnn.enabled = False
 import torch.nn as nn
 import torch.optim as optim
 import torch.optim.lr_scheduler as lr_scheduler
@@ -27,7 +28,8 @@ def prepare_data(sr_dir, lr_dir, patch_size, batch_size, mode='train', shuffle=T
         transform = co_transforms.Compose(
             [co_transforms.Grayscale(),
              #co_transforms.RandomCrop(patch_size, patch_size),
-             co_transforms.ToTensor()])
+             co_transforms.ToTensor(),])
+#             co_transforms.Normalize(mean=[0.3787], std=[0.2464])])
 
     elif mode is 'train':
         transform = co_transforms.Compose(
@@ -35,11 +37,13 @@ def prepare_data(sr_dir, lr_dir, patch_size, batch_size, mode='train', shuffle=T
              #co_transforms.RandomCrop(patch_size, patch_size),
              co_transforms.RandomHorizontalFlip(),
              co_transforms.RandomVerticalFlip(),
-             co_transforms.ToTensor()])
+             co_transforms.ToTensor(),])
+ #            co_transforms.Normalize(mean=[0.3787], std=[0.2464])])
     else:
         transform = co_transforms.Compose(
             [co_transforms.Grayscale(),
-             co_transforms.ToTensor()])
+             co_transforms.ToTensor(),])
+#            co_transforms.Normalize(mean=[0.3787], std=[0.2464])])
 
     dset = SRDataset(highres_root=sr_dir, lowres_root=lr_dir, transform=transform)
     dloader = data.DataLoader(dset, batch_size=batch_size, shuffle=shuffle)
@@ -120,7 +124,7 @@ def test(model, testData, savedir, lowres_dim, cuda=True):
     model.eval()
     downsample = transforms.Compose([transforms.ToPILImage(), transforms.Resize(lowres_dim, Image.BICUBIC), transforms.ToTensor()])
     toImage = transforms.ToPILImage()
-    batch_size = 3
+    batch_size = 4
     for step, (high, _) in enumerate(testData):
 
         # --- removes online downsampling ---
@@ -156,18 +160,27 @@ def save_snapshot(state, filename='checkpoint.pth.tar', savedir='./checkpoints')
 def show_results(highdir, lowdir, resdir, port=8097):
     dashboard = Dashboard(port=port)
     filenames = [k.split('/')[-1].split('.')[0] for k in glob.glob(os.path.join(highdir, '*.bmp'))]
-    #shuffle(filenames)
+    shuffle(filenames)
 
 
     batch = np.empty((0, 3, 1024, 1024))
     print len(filenames)
-    for i in range(15,20):
+    for i in range(5):
         currfile = filenames[i]
         im = np.array(Image.open(os.path.join(highdir, currfile + ".bmp")).convert('RGB'))
         im = im.transpose((2, 0, 1))
         batch = np.append(batch, im[np.newaxis, :, :, :], axis=0)
 
-        im = np.array(Image.open(os.path.join(lowdir, currfile + ".bmp")).convert('RGB'))
+        im = Image.open(os.path.join(lowdir, currfile + ".bmp")).convert('RGB')
+        im_w, im_h = im.size
+
+        background = Image.new('RGB', (1024,1024), (255,255,255))
+        bg_w, bg_h = background.size
+        offset = ((bg_w - im_w) / 2, (bg_h - im_h) / 2)
+        background.paste(im, offset)
+
+        im = np.array(background)
+
         im = im.transpose((2, 0, 1))
         batch = np.append(batch, im[np.newaxis, :, :, :], axis=0)
 
@@ -183,10 +196,11 @@ def main(args):
 
     # model = SRResNet(16, 1)
     model = SRDenseNet_ALL(8)
-    criterion = nn.MSELoss()
+    criterion = nn.L1Loss()
 
     if args.cuda:
         model = model.cuda()
+        model = torch.nn.DataParallel(model, device_ids=range(2)).cuda()
         criterion = criterion.cuda()
 
     # --- start training the network

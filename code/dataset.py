@@ -3,6 +3,7 @@ from glob import glob
 
 from PIL import Image
 from torch.utils.data import Dataset
+import numpy as np
 
 
 class SRDataset(Dataset):
@@ -15,6 +16,12 @@ class SRDataset(Dataset):
         self.transform = transform
 
         self.filenames = [k.split('/')[-1].split('.')[0] for k in glob(os.path.join(self.highres_root, '*.' + ext))]
+        self.train_data = []
+        for fname in self.filenames:
+            im = Image.open(os.path.join(self.lowres_root, fname + '.' + self.ext)).convert('L')
+            self.train_data.append(im)
+
+        self.train_data = np.stack(self.train_data, axis=0)
 
     def __getitem__(self, index):
         SRfilename = os.path.join(self.highres_root, self.filenames[index] + '.' + self.ext)

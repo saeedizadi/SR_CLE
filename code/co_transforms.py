@@ -121,7 +121,7 @@ class Normalize(object):
         self.mean = mean
         self.std = std
 
-    def __call__(self, tensor):
+    def __call__(self, tensor, target):
         """
         Args:
             tensor (Tensor): Tensor image of size (C, H, W) to be normalized.
@@ -129,7 +129,7 @@ class Normalize(object):
         Returns:
             Tensor: Normalized Tensor image.
         """
-        return F.normalize(tensor, self.mean, self.std)
+        return F.normalize(tensor, self.mean, self.std), target
 
     def __repr__(self):
         return self.__class__.__name__ + '(mean={0}, std={1})'.format(self.mean, self.std)
