@@ -48,6 +48,7 @@ default_test.WEIGHT_DIR= '../checkpoints'
 
 default_evaluate = argparse.Namespace()
 default_evaluate.RESULTS= '../results'
+default_evaluate.HR_TEST_DIR= '../data/highres/test'
 default_evaluate.METHODS= ['srdensenet', 'bicubic']
 
 
@@ -55,6 +56,7 @@ default_show = argparse.Namespace()
 default_show.HIGHRES= '/local-scratch/saeedI/SR_CLE/data/highres/test'
 default_show.LOWRES= '/local-scratch/saeedI/SR_CLE/data/lowres/test'
 default_show.RESULTS= '../results'
+default_show.METHODS = ['bicubic', 'srdensenet']
 
 
 # --- define the function to define the parsers and subparsers and get the arguments
@@ -103,8 +105,9 @@ def get_arguments():
     parser_test.add_argument('--state', type=int, default=default_test.STATE)
 
     parser_evaluate = subparser.add_parser('evaluate')
-    parser_evaluate.add_argument('--resdir', type=str, default=default_show.RESULTS)
-    parser_evaluate
+    parser_evaluate.add_argument('--resdir', type=str, default=default_evaluate.RESULTS)
+    parser_evaluate.add_argument('--hrdir', type=str, default=default_evaluate.HR_TEST_DIR)
+    parser_evaluate.add_argument('--methods', nargs='+', default=default_evaluate.METHODS)
 
 
     parser_show = subparser.add_parser('show')

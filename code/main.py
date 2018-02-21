@@ -5,7 +5,6 @@ from random import shuffle
 
 import numpy as np
 import torch
-#torch.backends.cudnn.enabled = False
 import torch.nn as nn
 import torch.optim as optim
 import torch.optim.lr_scheduler as lr_scheduler
@@ -18,7 +17,6 @@ import co_transforms as co_transforms
 from conf import get_arguments
 from dataset import SRDataset
 from evaluation import PSNR
-from generator import SRResNet
 from visualize import Dashboard
 from srdensenet import SRDenseNet_ALL
 
@@ -142,7 +140,7 @@ def test(model, testData, savedir, lowres_dim, cuda=True):
         for j in range(output.size()[0]):
             index = step * batch_size + j
             output_img = toImage(output[j].data.cpu())
-            res_filename = os.path.join(args.savedir, filenames[index] + '_result.bmp')
+            res_filename = os.path.join(args.savedir, filenames[index] + '_srdensenet.bmp')
             output_img.save(res_filename, 'BMP')
 
             # --- compute the required scores ---
@@ -157,38 +155,59 @@ def save_snapshot(state, filename='checkpoint.pth.tar', savedir='./checkpoints')
     torch.save(state, fullname)
 
 
-def show_results(highdir, lowdir, resdir, port=8097):
+def show_results(highdir, lowdir, resdir, methods, port=8097):
     dashboard = Dashboard(port=port)
     filenames = [k.split('/')[-1].split('.')[0] for k in glob.glob(os.path.join(highdir, '*.bmp'))]
     shuffle(filenames)
 
 
-    batch = np.empty((0, 3, 1024, 1024))
-    print len(filenames)
+    batch = np.empty((0, 1024, 1024))
     for i in range(5):
         currfile = filenames[i]
-        im = np.array(Image.open(os.path.join(highdir, currfile + ".bmp")).convert('RGB'))
-        im = im.transpose((2, 0, 1))
-        batch = np.append(batch, im[np.newaxis, :, :, :], axis=0)
+        im = np.array(Image.open(os.path.join(highdir, currfile + ".bmp")).convert('L'))
+        # im = im.transpose((2, 0, 1))
+        batch = np.append(batch, im[np.newaxis, :, :], axis=0)
+        for m in methods:
+            im = Image.open(os.path.join(resdir, currfile + '_' + m + ".bmp")).convert('L')
+            # background = Image.new('RGB', (1024,1024), (255,255,255))
+            # bg_w, bg_h = background.size
+            # offset = ((bg_w - im_w) / 2, (bg_h - im_h) / 2)
+            # background.paste(im, offset)
+            # im = np.array(background)
+            #     im = im.transpose((2, 0, 1))
+            batch = np.append(batch, im[np.newaxis, :, :], axis=0)
 
-        im = Image.open(os.path.join(lowdir, currfile + ".bmp")).convert('RGB')
-        im_w, im_h = im.size
+            # im = np.array(Image.open(os.path.join(resdir, currfile + "_result.bmp")).convert('RGB'))
+            # im = im.transpose((2, 0, 1))
+            # batch = np.append(batch, im[np.newaxis, :, :, :], axis=0)
+    dashboard.grid_plot(batch, nrow=len(m)+1)
 
-        background = Image.new('RGB', (1024,1024), (255,255,255))
-        bg_w, bg_h = background.size
-        offset = ((bg_w - im_w) / 2, (bg_h - im_h) / 2)
-        background.paste(im, offset)
+def quantitative_evaluate(hrdir, resdir, methods):
 
-        im = np.array(background)
+    psnr = PSNR()
+    scores = dict()
 
-        im = im.transpose((2, 0, 1))
-        batch = np.append(batch, im[np.newaxis, :, :, :], axis=0)
+    filenames = [k.split('/')[-1].split('.')[0] for k in glob.glob(os.path.join(hrdir, '*.bmp'))]
+    for m in methods:
+        images = []
+        results = []
+        for f in filenames:
+            im = np.array(Image.open(os.path.join(hrdir, '.bmp')).convert('L'))
+            images.append(im)
+            res = np.array(Image.open(os.path.join(resdir, '_' + m + '.bmp')).convert('L'))
+            results.append(res)
 
-        im = np.array(Image.open(os.path.join(resdir, currfile + "_result.bmp")).convert('RGB'))
-        im = im.transpose((2, 0, 1))
-        batch = np.append(batch, im[np.newaxis, :, :, :], axis=0)
+        images = np.stack(images, axis=0)
+        results = np.stack(results, axis=0)
+        print images.shape
+        print results.shape
 
-    dashboard.grid_plot(batch, nrow=3)
+        scores[m] = PSNR(images, res)
+
+
+    print scores
+
+
 
 
 def main(args):
