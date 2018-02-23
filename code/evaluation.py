@@ -22,12 +22,13 @@ class PSNR():
 
     def __call__(self, high, rec_high):
         psnr_sum = 0.
-        
-        high = np.uint8(np.transpose(high, (0, 2, 3, 1))*255)
-        rec_high = np.uint8(np.transpose(rec_high, (0, 2, 3, 1))*255)
+        if high.dtype == 'float32':
+            high = np.uint8(high*255)
+            rec_high = np.uint8(rec_high*255)
 
         self.mse = np.mean((high-rec_high)**2)
         if self.mse == 0:
+            print "hre"
             return 100
 
         PIXEL_MAX = 255.0

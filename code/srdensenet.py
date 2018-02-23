@@ -3,6 +3,26 @@ import torch.nn as nn
 from utils import initialize_weights
 import torch.nn.functional as F
 
+
+class UpSample_Block(nn.Module):
+    # changed 256 --> 64 since pixelShuffle has been removed
+    def __init__(self, in_channels=256, out_channels=1024):
+        super(UpSample_Block, self).__init__()
+
+        self.layers = nn.Sequential(
+            nn.Conv2d(in_channels=in_channels,
+                      out_channels=out_channels,
+                      kernel_size=3,
+                      stride=1,
+                      padding=1,
+                      bias=True),
+            nn.PixelShuffle(2),
+            nn.ReLU(inplace=True))
+
+    def forward(self, x):
+        return self.layers(x)
+
+
 class DenseNetConv(nn.Module):
     def __init__(self, in_channels, out_channels, ks=3, padding=1,stride=1):
         super(DenseNetConv, self).__init__()
@@ -47,6 +67,7 @@ class DenseNetBlock(nn.Module):
 
         self.conv8 = nn.Sequential(nn.Conv2d(112, 16, 3, 1, 1),
                                    nn.ReLU(inplace=True))
+
 
 
     def forward(self,x):
@@ -150,14 +171,18 @@ class SRDenseNet(nn.Module):
         self.denseblks = nn.ModuleList([DenseNetBlock() for i in range(num_denseblks)])
 
 
-        self.bottleneck = nn.Conv2d(256, 128, kernel_size=1, stride=1)
+        #self.bottleneck = nn.Conv2d(256, 128, kernel_size=1, stride=1)
 
-        self.deconv1 = nn.Sequential(nn.ConvTranspose2d(256, 256, kernel_size=2, stride=2),
-                                     nn.ReLU(inplace=True))
-        self.deconv2 = nn.Sequential(nn.ConvTranspose2d(256, 256, kernel_size=2, stride=2),
-                                     nn.ReLU(inplace=True))
+        #self.deconv1 = nn.Sequential(nn.ConvTranspose2d(256, 256, kernel_size=2, stride=2),
+        #                             nn.ReLU(inplace=True))
+        #self.deconv2 = nn.Sequential(nn.ConvTranspose2d(256, 256, kernel_size=2, stride=2),
+        #                             nn.ReLU(inplace=True))
 
         self.reconst_conv = nn.Conv2d(256, 1, kernel_size=3, stride=1, padding=1)
+
+	self.up1 = UpSample_Block()
+	self.up2 = UpSample_Block()
+	self.up3 = UpSample_Block()
 
         initialize_weights(self, 'kaiming')
 
@@ -173,10 +198,12 @@ class SRDenseNet(nn.Module):
 
         deconv1_in = torch.cat(([low_feats, x]), dim=1)
 
-
-        x = self.deconv1(deconv1_in)
-        x = self.deconv2(x)
-
+        #x = self.deconv1(deconv1_in)
+        #x = self.deconv2(x)
+        x = deconv1_in
+	x = self.up1(x)
+	x = self.up2(x)
+	x = self.up3(x)
         out = self.reconst_conv(x)
 
         return F.sigmoid(out)

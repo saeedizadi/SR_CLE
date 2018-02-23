@@ -13,14 +13,14 @@ defaults.CUDA = False
 
 # --- define the namespace for defaults for train mode
 default_train = argparse.Namespace()
-default_train.BATCH_SIZE = 32
-default_train.LEARNING_RATE = 0.01
+default_train.BATCH_SIZE = 128
+default_train.LEARNING_RATE = 0.001
 default_train.EPOCHS = 300
 default_train.MOMENTUM = 0.9
-default_train.WEIGHT_DECAY = 0.00005
-default_train.PATCH_SIZE  = 256
+default_train.WEIGHT_DECAY = 0.0005
+default_train.PATCH_SIZE  = 64
 default_train.IMAGE_SIZE  = 1024
-default_train.DOWNSCALE_RATIO = 4
+default_train.DOWNSCALE_RATIO = 8
 default_train.SR_TRAIN_DIR = '/local-scratch/saeedI/SR_CLE/data/highres/train'
 default_train.LR_TRAIN_DIR = '/local-scratch/saeedI/SR_CLE/data/lowres/train'
 default_train.SR_VAL_DIR = '/local-scratch/saeedI/SR_CLE/data/highres/val'
@@ -31,17 +31,15 @@ default_train.STATE= 20 # for resume
 default_train.SAVE_DIR= '../checkpoints'
 
 
-
-
 default_test = argparse.Namespace()
 default_test.BATCH_SIZE = 4
-default_test.PATCH_SIZE  = 256
+default_test.PATCH_SIZE  = 64
 default_test.IMAGE_SIZE  = 1024
-default_test.DOWNSCALE_RATIO= 4
+default_test.DOWNSCALE_RATIO= 8
 default_test.SR_TEST_DIR = '/local-scratch/saeedI/SR_CLE/data/highres/test'
 default_test.LR_TEST_DIR = '/local-scratch/saeedI/SR_CLE/data/lowres/test'
 default_test.NUM_WORKER = 2
-default_test.STATE= 10
+default_test.STATE= 40
 default_test.SAVE_DIR= '../results'
 default_test.WEIGHT_DIR= '../checkpoints'
 
@@ -56,7 +54,7 @@ default_show = argparse.Namespace()
 default_show.HIGHRES= '/local-scratch/saeedI/SR_CLE/data/highres/test'
 default_show.LOWRES= '/local-scratch/saeedI/SR_CLE/data/lowres/test'
 default_show.RESULTS= '../results'
-default_show.METHODS = ['bicubic', 'srdensenet']
+default_show.METHODS = ['srdensenet', 'bicubic']
 
 
 # --- define the function to define the parsers and subparsers and get the arguments
@@ -114,5 +112,6 @@ def get_arguments():
     parser_show.add_argument('--hrdir', type=str, default=default_show.HIGHRES)
     parser_show.add_argument('--lrdir', type=str, default=default_show.LOWRES)
     parser_show.add_argument('--resdir', type=str, default=default_show.RESULTS)
+    parser_show.add_argument('--methods', nargs='+', default=default_show.METHODS)
     args = parser.parse_args()
     return args

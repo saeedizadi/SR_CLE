@@ -27,8 +27,8 @@ class SRDataset(Dataset):
         SRfilename = os.path.join(self.highres_root, self.filenames[index] + '.' + self.ext)
         LRfilename = os.path.join(self.lowres_root, self.filenames[index] + '.' + self.ext)
 
-        im = Image.open(SRfilename).convert('RGB')
-        target = Image.open(LRfilename).convert('RGB')
+        im = Image.open(SRfilename).convert('L')
+        target = Image.open(LRfilename).convert('L')
 
         if self.transform is not None:
             im, target = self.transform(im, target)

@@ -18,7 +18,7 @@ from conf import get_arguments
 from dataset import SRDataset
 from evaluation import PSNR
 from visualize import Dashboard
-from srdensenet import SRDenseNet_ALL
+from srdensenet import SRDenseNet
 
 
 def prepare_data(sr_dir, lr_dir, patch_size, batch_size, mode='train', shuffle=True):
@@ -168,7 +168,8 @@ def show_results(highdir, lowdir, resdir, methods, port=8097):
         # im = im.transpose((2, 0, 1))
         batch = np.append(batch, im[np.newaxis, :, :], axis=0)
         for m in methods:
-            im = Image.open(os.path.join(resdir, currfile + '_' + m + ".bmp")).convert('L')
+            print m
+            im = np.array(Image.open(os.path.join(resdir, currfile + '_' + m + ".bmp")).convert('L'))
             # background = Image.new('RGB', (1024,1024), (255,255,255))
             # bg_w, bg_h = background.size
             # offset = ((bg_w - im_w) / 2, (bg_h - im_h) / 2)
@@ -177,10 +178,8 @@ def show_results(highdir, lowdir, resdir, methods, port=8097):
             #     im = im.transpose((2, 0, 1))
             batch = np.append(batch, im[np.newaxis, :, :], axis=0)
 
-            # im = np.array(Image.open(os.path.join(resdir, currfile + "_result.bmp")).convert('RGB'))
-            # im = im.transpose((2, 0, 1))
-            # batch = np.append(batch, im[np.newaxis, :, :, :], axis=0)
-    dashboard.grid_plot(batch, nrow=len(m)+1)
+    batch = np.expand_dims(batch, axis=1)
+    dashboard.grid_plot(batch, nrow=len(methods)+1)
 
 def quantitative_evaluate(hrdir, resdir, methods):
 
@@ -189,32 +188,20 @@ def quantitative_evaluate(hrdir, resdir, methods):
 
     filenames = [k.split('/')[-1].split('.')[0] for k in glob.glob(os.path.join(hrdir, '*.bmp'))]
     for m in methods:
-        images = []
-        results = []
+        psnr_sum = 0.
         for f in filenames:
-            im = np.array(Image.open(os.path.join(hrdir, '.bmp')).convert('L'))
-            images.append(im)
-            res = np.array(Image.open(os.path.join(resdir, '_' + m + '.bmp')).convert('L'))
-            results.append(res)
+            im = np.array(Image.open(os.path.join(hrdir, f + '.bmp')).convert('L'))
+            res = np.array(Image.open(os.path.join(resdir, f + '_' + m + '.bmp')).convert('L'))
+            psnr_sum += psnr(im, res)
 
-        images = np.stack(images, axis=0)
-        results = np.stack(results, axis=0)
-        print images.shape
-        print results.shape
-
-        scores[m] = PSNR(images, res)
-
-
+        scores[m] = psnr_sum / len(filenames)
     print scores
-
-
-
 
 def main(args):
 
 
     # model = SRResNet(16, 1)
-    model = SRDenseNet_ALL(8)
+    model = SRDenseNet(12)
     criterion = nn.L1Loss()
 
     if args.cuda:
@@ -229,8 +216,10 @@ def main(args):
         #valLoader = prepare_data(sr_dir=args.srvaldir, lr_dir=args.lrvaldir, patch_size=args.patch_size,
         #                         batch_size=args.batch_size/4, mode='val')
 
-        optimizer = optim.SGD(model.parameters(), lr=args.learning_rate, momentum=args.momentum,
-                              weight_decay=args.weight_decay)
+        optimizer = optim.Adam(model.parameters(), lr=args.learning_rate)
+        #optimizer = optim.SGD(model.parameters(), lr=args.learning_rate, momentum=args.momentum,
+        #                      weight_decay=args.weight_decay)
+
         scheduler = lr_scheduler.MultiStepLR(optimizer, milestones=[50, 100], gamma=0.1)
 
 
@@ -288,14 +277,16 @@ def main(args):
 
         filename = 'checkpoint_{0:02}.pth.tar'.format(args.state)
         checkpoint = torch.load(os.path.join(args.weightdir, filename))
-
         model.load_state_dict(checkpoint['state_dict'])
 
         psnr = test(model, testLoader, args.savedir, lowres_dim=args.image_size / args.downscale_ratio, cuda=args.cuda)
         print('[PSNR: {0:.4f}]'.format(float(psnr[0])))
 
     elif args.mode == "show":
-        show_results(args.hrdir, args.lrdir, args.resdir, port=args.visdom_port)
+        show_results(args.hrdir, args.lrdir, args.resdir, args.methods,port=args.visdom_port)
+
+    elif args.mode == "evaluate":
+        quantitative_evaluate(args.hrdir, args.resdir, args.methods)
 
 
 if __name__ == '__main__':

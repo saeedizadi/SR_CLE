@@ -18,7 +18,7 @@ def downsample(image, mag_ratio):
 
 
 def upsample(image, size):
-    im_up = misc.imresize(image, size=size, interp='nearest')
+    im_up = misc.imresize(image, size=size, interp='bicubic')
     return im_up
 
 def crop(im, height, width):
@@ -35,7 +35,7 @@ def partiton_images_blockwise(args):
     filenames = glob.glob(os.path.join(imgdir, "*" + args.ext))
     for ind, currfile in enumerate(filenames):
 
-        im = Image.open(currfile).convert('RGB')
+        im = Image.open(currfile).convert('L')
         imgwidth, imgheight = im.size
 
         height = imgheight / args.part_ratio
@@ -44,7 +44,7 @@ def partiton_images_blockwise(args):
         start_num = 0
         for k, piece in enumerate(crop(im, height, width), start_num):
 
-            img = Image.new('RGB', (width, height), 255)
+            img = Image.new('L', (width, height), 255)
             img.paste(piece)
             currfile = currfile.split('/')[-1].split('.')[0]
             path = os.path.join(imgdir, currfile + '_crop_{0}.bmp'.format(k + 1))
@@ -63,14 +63,14 @@ def generate_lowres_dataset(args):
     for (dirpath, _, _) in os.walk(os.path.join(root, 'lowres')):
         filenames = [k.split('/')[-1].split('.')[0] for k in glob.glob(os.path.join(dirpath, '*' + args.ext))]
         for f in tqdm(filenames):
-            im = np.array(Image.open(os.path.join(dirpath, f + args.ext)).convert('RGB'))
+            im = np.array(Image.open(os.path.join(dirpath, f + args.ext)).convert('L'))
             #im = cv2.filter2D(im, -1, kernel)
             original_size = im.shape
             im_ds = downsample(im, args.magnif)
 
             #im_us = im_ds
             im_us = upsample(im_ds, size=original_size)
-            temp = Image.fromarray(im_us, mode='RGB')
+            temp = Image.fromarray(im_us, mode='L')
             new_filename = f + args.ext
             temp.save(os.path.join(dirpath, new_filename))
 
@@ -89,8 +89,8 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser()
     parser.add_argument('--indir', type=str, default='../data')
     parser.add_argument('--ext', type=str, default='.bmp')
-    parser.add_argument('--magnif', type=int, default=4)
-    parser.add_argument('--part-ratio', type=int, default=4)
+    parser.add_argument('--magnif', type=int, default=8)
+    parser.add_argument('--part-ratio', type=int, default=16)
     parser.add_argument('--downscale', action='store_true')
     parser.add_argument('--split', action='store_true')
 
