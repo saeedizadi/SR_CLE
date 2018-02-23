@@ -18,7 +18,7 @@ from conf import get_arguments
 from dataset import SRDataset
 from evaluation import PSNR
 from visualize import Dashboard
-from srdensenet import SRDenseNet
+from srdensenet import SRDenseNet_ALL
 
 
 def prepare_data(sr_dir, lr_dir, patch_size, batch_size, mode='train', shuffle=True):
@@ -201,7 +201,7 @@ def main(args):
 
 
     # model = SRResNet(16, 1)
-    model = SRDenseNet(12)
+    model = SRDenseNet_ALL(12)
     criterion = nn.L1Loss()
 
     if args.cuda:
