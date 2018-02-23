@@ -116,7 +116,7 @@ class SRDenseNet_ALL(nn.Module):
         self.growth_rate = 128
         self.denseblks = nn.ModuleList([DenseNetBlock(self.growth_rate * (i + 1)) for i in range(num_denseblks)])
 
-        self.bottleneck = nn.Conv2d(1152, 256, kernel_size=1, stride=1)
+        self.bottleneck = nn.Conv2d(1664, 256, kernel_size=1, stride=1)
 
         self.up1 = UpSample_Block()
         self.up2 = UpSample_Block()
