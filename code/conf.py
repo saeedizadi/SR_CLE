@@ -39,7 +39,7 @@ default_test.DOWNSCALE_RATIO= 8
 default_test.SR_TEST_DIR = '/local-scratch/saeedI/SR_CLE/data/highres/test'
 default_test.LR_TEST_DIR = '/local-scratch/saeedI/SR_CLE/data/lowres/test'
 default_test.NUM_WORKER = 2
-default_test.STATE= 40
+default_test.STATE= 70
 default_test.SAVE_DIR= '../results'
 default_test.WEIGHT_DIR= '../checkpoints'
 
